@@ -209,6 +209,7 @@
 
         var bestShift = 0;
         var bestSAD = Infinity;     // Sum of Absolute Differences
+        var sadAtZero = 0;          // SAD when shift=0 (no-motion baseline)
 
         for (var shift = -maxShift; shift <= maxShift; shift++) {
             var sad = 0;
@@ -226,14 +227,18 @@
                 }
             }
             if (count > 0) sad /= count;
+            if (shift === 0) sadAtZero = sad;
             if (sad < bestSAD) {
                 bestSAD = sad;
                 bestShift = shift;
             }
         }
 
-        // Reject if the match quality is poor (all shifts look similar)
+        // Reject if the match quality is poor
         if (bestSAD > 30) return 0;
+
+        // Reject ambiguous: best shift must be clearly better than no-motion
+        if (bestShift !== 0 && sadAtZero > 0 && bestSAD > sadAtZero * 0.7) return 0;
 
         return bestShift;
     };

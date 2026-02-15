@@ -78,11 +78,11 @@ Works with Xbox, PlayStation, or anything your browser recognizes.
 
 ### Browser Webcam
 
-The default. Pick your webcam from the dropdown on the start screen and you're good. If your webcam supports pan/tilt/zoom (some Logitech models do), the game will use it automatically.
+The default. Pick your webcam from the dropdown on the start screen and you're good. If your webcam supports pan/tilt/zoom (some PTZOptics models do), the game will use it automatically.
 
-### IP Camera
+### IP Camera (Work in progress)
 
-Got a PTZOptics or similar IP camera? Switch to "IP Camera" on the start screen, type in the IP address (like `192.168.1.100`), and the game grabs snapshots over HTTP. The game remembers your IP next time.
+Got a PTZOptics or similar IP camera? Switch to "IP Camera" on the start screen, type in the IP address (like `192.168.100.88`), and the game grabs snapshots over HTTP. The game remembers your IP next time.
 
 Move the camera with your keyboard/gamepad — the game sends PTZ commands over HTTP so you can aim by physically moving the camera. It's the whole point, honestly.
 

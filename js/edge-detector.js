@@ -193,22 +193,43 @@
         return { found: true, x: gameX, y: refinedY };
     };
 
-    // Global horizontal motion estimation using a large central block.
-    // Compares the central 70% of the frame between two grayscale images,
-    // subsampling every other row and pixel for performance.
-    // A large block captures whatever texture exists anywhere in view;
-    // uniform regions add zero signal but don't hurt (they contribute
-    // equal SAD at every shift). Returns shift in processing pixels.
+    // Horizontal motion estimation via column-average profiling.
+    // Mimics cv2.phaseCorrelate's full-frame approach: averages each column
+    // across ALL rows to produce a 1D brightness profile. Cross-correlates
+    // the profiles between frames to find horizontal shift.
+    //
+    // Why this works when per-pixel SAD fails:
+    // - Integrates the ENTIRE frame (like phaseCorrelate), not a strip or block
+    // - Noise reduced by sqrt(h) (~15x at 240px) through column averaging
+    // - Horizontal edges contribute a constant to every column → cancels in SAD
+    // - Any vertical feature (objects, shadows, corners) creates clear profile peaks
     ARGame.estimateGlobalMotionX = function (prevGray, curGray, w, h) {
         if (!prevGray || prevGray.length !== curGray.length) return 0;
 
         var maxShift = 12;
         var margin = maxShift + 2;
-        var y0 = Math.round(h * 0.15);
-        var y1 = Math.round(h * 0.85);
 
-        if (w < margin * 2 + 10 || y1 - y0 < 10) return 0;
+        if (w < margin * 2 + 10 || h < 10) return 0;
 
+        // Step 1: Column averages — project full 2D frame onto 1D X axis
+        var prevProfile = new Float32Array(w);
+        var curProfile = new Float32Array(w);
+
+        for (var y = 0; y < h; y++) {
+            var base = y * w;
+            for (var x = 0; x < w; x++) {
+                prevProfile[x] += prevGray[base + x];
+                curProfile[x] += curGray[base + x];
+            }
+        }
+
+        var invH = 1.0 / h;
+        for (var x = 0; x < w; x++) {
+            prevProfile[x] *= invH;
+            curProfile[x] *= invH;
+        }
+
+        // Step 2: Cross-correlate 1D profiles to find horizontal shift
         var bestShift = 0;
         var bestSAD = Infinity;
         var sadAtZero = 0;
@@ -217,12 +238,9 @@
             var sad = 0;
             var x0 = Math.max(margin, -shift);
             var x1 = Math.min(w - margin, w - shift);
-            for (var y = y0; y < y1; y += 2) {
-                var base = y * w;
-                for (var x = x0; x < x1; x += 2) {
-                    var diff = prevGray[base + x] - curGray[base + x + shift];
-                    sad += diff < 0 ? -diff : diff;
-                }
+            for (var x = x0; x < x1; x++) {
+                var diff = prevProfile[x] - curProfile[x + shift];
+                sad += diff < 0 ? -diff : diff;
             }
             if (shift === 0) sadAtZero = sad;
             if (sad < bestSAD) {
@@ -231,11 +249,11 @@
             }
         }
 
-        // Static scene: near-zero SAD at zero-shift means nothing moved
-        var count = ((y1 - y0) >> 1) * ((x1 - x0) >> 1);
-        if (count > 0 && sadAtZero / count < 1.5) return 0;
+        // Static scene: column averages barely change between frames
+        var count = w - 2 * margin;
+        if (count > 0 && sadAtZero / count < 0.5) return 0;
 
-        // No clear winner: best shift isn't notably better than no shift
+        // No clear winner
         if (sadAtZero > 0 && bestSAD > sadAtZero * 0.95) return 0;
 
         return bestShift;

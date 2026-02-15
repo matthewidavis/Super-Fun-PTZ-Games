@@ -299,7 +299,6 @@
         processScale = config.PROCESS_SCALE;
         targetWasActive = false;
         prevGray = null;
-        prevEdges = [];
         motionHistoryX = [];
         lastFrameTime = 0;
         gameOverHandled = false;
@@ -336,7 +335,6 @@
     var gameOverHandled = false;
     var motionHistoryX = [];      // Recent horizontal motion estimates for median filter
     var MOTION_HISTORY_SIZE = 3;
-    var prevEdges = [];           // Previous frame's detected edges for center tracking
 
     function medianOf(arr) {
         if (arr.length === 0) return 0;
@@ -473,37 +471,11 @@
             var scale = 1.0 / processScale;
             var maxCount = config.POI_PERSISTENCE_MIN + config.TARGET_HOLD_FRAMES;
 
-            // Detect edges first — needed for both motion estimation and spawning
-            var edges = ARGame.detectSimple(gray, procW, procH, config);
-            gameState.lastEdges = edges;
-
-            // Edge-center motion estimation: track how edge centers shift
-            // between frames. This directly measures camera pan by comparing
-            // the centerX of matched edges, unlike SAD which fails on
-            // uniform horizontal edges.
-            if (prevEdges.length > 0 && edges.length > 0) {
-                var shifts = [];
-                for (var ei = 0; ei < edges.length; ei++) {
-                    var curCY = edges[ei][6];
-                    var curCX = edges[ei][5];
-                    var curLen = edges[ei][4];
-                    var bestMatch = null;
-                    var bestDY = 8;
-                    for (var pi = 0; pi < prevEdges.length; pi++) {
-                        var prevCY = prevEdges[pi][6];
-                        var prevLen = prevEdges[pi][4];
-                        var dy = Math.abs(curCY - prevCY);
-                        var lenRatio = curLen > prevLen ? curLen / prevLen : prevLen / curLen;
-                        if (dy < bestDY && lenRatio < 2) {
-                            bestDY = dy;
-                            bestMatch = prevEdges[pi];
-                        }
-                    }
-                    if (bestMatch) {
-                        shifts.push(curCX - bestMatch[5]);
-                    }
-                }
-                var rawDx = shifts.length > 0 ? medianOf(shifts) : 0;
+            // Global horizontal motion estimation: samples rows across the
+            // full frame for SAD correlation. Textured rows (objects, walls,
+            // furniture) vote on the shift; uniform rows are filtered out.
+            if (prevGray) {
+                var rawDx = ARGame.estimateGlobalMotionX(prevGray, gray, procW, procH);
 
                 motionHistoryX.push(rawDx);
                 if (motionHistoryX.length > MOTION_HISTORY_SIZE) motionHistoryX.shift();
@@ -531,8 +503,10 @@
                         .filter(function (h) { return h[0] >= 0 && h[0] <= config.GAME_WIDTH; });
                 }
             }
-            prevEdges = edges;
             prevGray = gray;
+
+            var edges = ARGame.detectSimple(gray, procW, procH, config);
+            gameState.lastEdges = edges;
 
             if (gameState.target.active) {
                 nativeCtx.drawImage(videoSource, 0, 0, nativeCanvas.width, nativeCanvas.height);

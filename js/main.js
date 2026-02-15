@@ -300,6 +300,7 @@
         targetWasActive = false;
         prevGray = null;
         smoothedDx = 0;
+        smoothedDy = 0;
         lastFrameTime = 0;
         gameOverHandled = false;
 
@@ -334,6 +335,7 @@
     var prevAmmo = -1;
     var gameOverHandled = false;
     var smoothedDx = 0;           // EMA-smoothed motion estimate (proc resolution)
+    var smoothedDy = 0;
 
     function gameLoop(timestamp) {
         requestAnimationFrame(gameLoop);
@@ -464,26 +466,42 @@
 
             if (prevGray) {
                 var rawDx = ARGame.estimateMotion(prevGray, gray, procW, procH);
-                // Smooth via EMA + clamp to prevent glitchy jumps from noise/fast pans
-                smoothedDx = smoothedDx * 0.6 + rawDx * 0.4;
-                var maxShift = 5;
+                var rawDy = ARGame.estimateMotionY(prevGray, gray, procW, procH);
+
+                // EMA smoothing (responsive blend) + clamp
+                var maxShift = 12;
+                smoothedDx = smoothedDx * 0.4 + rawDx * 0.6;
                 if (smoothedDx > maxShift) smoothedDx = maxShift;
                 else if (smoothedDx < -maxShift) smoothedDx = -maxShift;
+
+                smoothedDy = smoothedDy * 0.4 + rawDy * 0.6;
+                if (smoothedDy > maxShift) smoothedDy = maxShift;
+                else if (smoothedDy < -maxShift) smoothedDy = -maxShift;
+
                 var dxProc = Math.abs(smoothedDx) >= 0.8 ? smoothedDx : 0;
-                if (dxProc !== 0) {
+                var dyProc = Math.abs(smoothedDy) >= 0.8 ? smoothedDy : 0;
+
+                if (dxProc !== 0 || dyProc !== 0) {
                     var nativeDx = Math.round(dxProc * scale);
+                    var nativeDy = Math.round(dyProc * scale);
                     if (gameState.target.active) {
                         gameState.target.spawnX += nativeDx;
+                        gameState.target.spawnY += nativeDy;
                     }
                     if (gameState.target.scanTarget) {
                         gameState.target.scanTarget[0] += nativeDx;
+                        gameState.target.scanTarget[1] += nativeDy;
                     }
                     if (gameState.target.pendingSpawn) {
                         gameState.target.pendingSpawn[0] += nativeDx;
+                        gameState.target.pendingSpawn[1] += nativeDy;
                     }
                     gameState.target.hitHistory = gameState.target.hitHistory
-                        .map(function (h) { return [h[0] + nativeDx, h[1]]; })
-                        .filter(function (h) { return h[0] >= 0 && h[0] <= config.GAME_WIDTH; });
+                        .map(function (h) { return [h[0] + nativeDx, h[1] + nativeDy]; })
+                        .filter(function (h) {
+                            return h[0] >= 0 && h[0] <= config.GAME_WIDTH &&
+                                   h[1] >= 0 && h[1] <= config.GAME_HEIGHT;
+                        });
                 }
             }
             prevGray = gray;

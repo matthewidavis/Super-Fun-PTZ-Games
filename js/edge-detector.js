@@ -237,4 +237,44 @@
 
         return bestShift;
     };
+    // Vertical motion estimation between two grayscale frames.
+    // Cross-correlates a vertical strip from the middle of the frame
+    // over a search range to find the pixel shift.
+    // Returns dy in processing-resolution pixels (negative = scene moved up).
+    ARGame.estimateMotionY = function (prevGray, curGray, w, h) {
+        if (!prevGray || prevGray.length !== curGray.length) return 0;
+
+        var maxShift = 16;          // Search ±16 pixels at processing res
+        var stripX = (w >> 1) - 2;  // Middle of frame
+        var stripW = 4;             // 4-column strip for noise averaging
+        var margin = maxShift + 4;
+
+        if (stripX < 0 || stripX + stripW >= w || h < margin * 2) return 0;
+
+        var bestShift = 0;
+        var bestSAD = Infinity;
+
+        for (var shift = -maxShift; shift <= maxShift; shift++) {
+            var sad = 0;
+            var count = 0;
+            var y0 = Math.max(margin, -shift);
+            var y1 = Math.min(h - margin, h - shift);
+            for (var y = y0; y < y1; y++) {
+                for (var col = 0; col < stripW; col++) {
+                    var x = stripX + col;
+                    var diff = prevGray[y * w + x] - curGray[(y + shift) * w + x];
+                    sad += diff < 0 ? -diff : diff;
+                    count++;
+                }
+            }
+            if (count > 0) sad /= count;
+            if (sad < bestSAD) {
+                bestSAD = sad;
+                bestShift = shift;
+            }
+        }
+
+        if (bestSAD > 30) return 0;
+        return bestShift;
+    };
 })();

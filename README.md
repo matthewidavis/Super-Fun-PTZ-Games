@@ -10,19 +10,11 @@ Point your webcam (or fancy IP camera) at a bookshelf, a doorframe, your messy d
 
 ## Getting Started
 
-**You need:** A computer. A browser. A camera. That's it.
+**You need:** A browser. A camera. That's it. No install, no server, no build step.
 
-### Option A: The Fancy Way
+Open `index.html` in Chrome or Edge. Done.
 
-```bash
-python serve.py
-```
-
-Open **http://localhost:8080** in Chrome or Edge. Want a different port? `python serve.py 3000`. You do you.
-
-### Option B: The Lazy Way
-
-Just double-click `index.html`. It works. No server needed.
+> **Dev note:** `serve.py` is included if you want a local server with cache-busting headers (`python serve.py`), but it's totally optional. The game is just static files.
 
 ---
 

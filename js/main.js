@@ -299,8 +299,7 @@
         processScale = config.PROCESS_SCALE;
         targetWasActive = false;
         prevGray = null;
-        smoothedDx = 0;
-        smoothedDy = 0;
+        motionHistoryX = [];
         lastFrameTime = 0;
         gameOverHandled = false;
 
@@ -334,8 +333,15 @@
     var prevGray = null;
     var prevAmmo = -1;
     var gameOverHandled = false;
-    var smoothedDx = 0;           // EMA-smoothed motion estimate (proc resolution)
-    var smoothedDy = 0;
+    var motionHistoryX = [];      // Recent horizontal motion estimates for median filter
+    var MOTION_HISTORY_SIZE = 5;
+
+    function medianOf(arr) {
+        if (arr.length === 0) return 0;
+        var s = arr.slice().sort(function (a, b) { return a - b; });
+        var m = s.length >> 1;
+        return s.length & 1 ? s[m] : (s[m - 1] + s[m]) * 0.5;
+    }
 
     function gameLoop(timestamp) {
         requestAnimationFrame(gameLoop);
@@ -466,42 +472,32 @@
 
             if (prevGray) {
                 var rawDx = ARGame.estimateMotion(prevGray, gray, procW, procH);
-                var rawDy = ARGame.estimateMotionY(prevGray, gray, procW, procH);
 
-                // EMA smoothing (heavy on old value to reject noise) + clamp
-                var maxShift = 10;
-                smoothedDx = smoothedDx * 0.6 + rawDx * 0.4;
-                if (smoothedDx > maxShift) smoothedDx = maxShift;
-                else if (smoothedDx < -maxShift) smoothedDx = -maxShift;
+                // Median filter: reject single-frame noise outliers
+                motionHistoryX.push(rawDx);
+                if (motionHistoryX.length > MOTION_HISTORY_SIZE) motionHistoryX.shift();
+                var dxProc = medianOf(motionHistoryX);
 
-                smoothedDy = smoothedDy * 0.6 + rawDy * 0.4;
-                if (smoothedDy > maxShift) smoothedDy = maxShift;
-                else if (smoothedDy < -maxShift) smoothedDy = -maxShift;
+                // Deadzone + clamp
+                if (Math.abs(dxProc) < 0.8) dxProc = 0;
+                if (dxProc > 10) dxProc = 10;
+                else if (dxProc < -10) dxProc = -10;
 
-                var dxProc = Math.abs(smoothedDx) >= 0.8 ? smoothedDx : 0;
-                var dyProc = Math.abs(smoothedDy) >= 0.8 ? smoothedDy : 0;
-
-                if (dxProc !== 0 || dyProc !== 0) {
+                // Horizontal only — verifyEdge handles Y tracking
+                if (dxProc !== 0) {
                     var nativeDx = Math.round(dxProc * scale);
-                    var nativeDy = Math.round(dyProc * scale);
                     if (gameState.target.active) {
                         gameState.target.spawnX += nativeDx;
-                        gameState.target.spawnY += nativeDy;
                     }
                     if (gameState.target.scanTarget) {
                         gameState.target.scanTarget[0] += nativeDx;
-                        gameState.target.scanTarget[1] += nativeDy;
                     }
                     if (gameState.target.pendingSpawn) {
                         gameState.target.pendingSpawn[0] += nativeDx;
-                        gameState.target.pendingSpawn[1] += nativeDy;
                     }
                     gameState.target.hitHistory = gameState.target.hitHistory
-                        .map(function (h) { return [h[0] + nativeDx, h[1] + nativeDy]; })
-                        .filter(function (h) {
-                            return h[0] >= 0 && h[0] <= config.GAME_WIDTH &&
-                                   h[1] >= 0 && h[1] <= config.GAME_HEIGHT;
-                        });
+                        .map(function (h) { return [h[0] + nativeDx, h[1]]; })
+                        .filter(function (h) { return h[0] >= 0 && h[0] <= config.GAME_WIDTH; });
                 }
             }
             prevGray = gray;

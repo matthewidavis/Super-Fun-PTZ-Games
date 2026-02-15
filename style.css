@@ -1,0 +1,344 @@
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+body {
+    background: #191923;
+    color: #fff;
+    font-family: 'Consolas', 'Courier New', monospace;
+    overflow: hidden;
+    width: 100vw;
+    height: 100vh;
+}
+
+/* -- Start Screen -- */
+#start-screen {
+    position: fixed;
+    inset: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 100;
+    transition: opacity 0.3s ease;
+}
+
+#start-screen.fade-out {
+    opacity: 0;
+    pointer-events: none;
+}
+
+#particle-canvas {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    pointer-events: none;
+}
+
+.start-content {
+    position: relative;
+    z-index: 1;
+    text-align: center;
+    max-width: 800px;
+    padding: 20px;
+}
+
+.title {
+    font-size: 52px;
+    color: #00ffc8;
+    margin-bottom: 8px;
+    letter-spacing: 2px;
+}
+
+.subtitle {
+    font-size: 16px;
+    color: #64646e;
+    margin-bottom: 30px;
+}
+
+.section-label {
+    font-size: 20px;
+    color: #b4b4b4;
+    text-align: left;
+    margin-bottom: 12px;
+}
+
+/* -- Theme Cards -- */
+.card-row {
+    display: flex;
+    gap: 50px;
+    justify-content: center;
+    margin-bottom: 30px;
+}
+
+.theme-card {
+    width: 340px;
+    height: 200px;
+    background: #1e2032;
+    border: 1px solid #3c3c46;
+    border-radius: 8px;
+    cursor: pointer;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    transition: border-color 0.15s, background 0.15s;
+    outline: none;
+}
+
+.theme-card:hover,
+.theme-card:focus {
+    border-color: #00ffc8;
+    background: #282d3c;
+}
+
+.theme-card.selected {
+    border: 2px solid #00ffc8;
+    background: #282d3c;
+}
+
+.card-icon {
+    margin-bottom: 8px;
+}
+
+.card-title {
+    font-size: 26px;
+    font-weight: bold;
+}
+
+.card-sub {
+    font-size: 14px;
+    color: #8c8c8c;
+}
+
+/* -- Mode Cards -- */
+.mode-row {
+    gap: 20px;
+}
+
+.mode-card {
+    width: 200px;
+    height: 130px;
+    background: #1e2032;
+    border: 1px solid #3c3c46;
+    border-radius: 8px;
+    cursor: pointer;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    transition: border-color 0.15s, background 0.15s;
+    outline: none;
+}
+
+.mode-card:hover,
+.mode-card:focus {
+    border-color: #00ffc8;
+    background: #282d3c;
+}
+
+.mode-card.selected {
+    border: 2px solid #00ffc8;
+    background: #282d3c;
+}
+
+.mode-icon {
+    font-size: 32px;
+    margin-bottom: 4px;
+}
+
+.mode-card .card-title {
+    font-size: 16px;
+}
+
+.mode-card .card-sub {
+    font-size: 12px;
+}
+
+/* -- Source Toggle -- */
+.source-row {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin-bottom: 16px;
+}
+
+.source-row .section-label {
+    margin-bottom: 0;
+    white-space: nowrap;
+}
+
+.source-toggle {
+    display: flex;
+    border: 1px solid #3c3c46;
+    border-radius: 4px;
+    overflow: hidden;
+}
+
+.source-btn {
+    font-family: inherit;
+    font-size: 14px;
+    padding: 8px 18px;
+    background: #23273a;
+    color: #8c8c8c;
+    border: none;
+    cursor: pointer;
+    transition: background 0.15s, color 0.15s;
+}
+
+.source-btn + .source-btn {
+    border-left: 1px solid #3c3c46;
+}
+
+.source-btn:hover {
+    color: #ddd;
+}
+
+.source-btn.selected {
+    background: #00ffc8;
+    color: #191923;
+    font-weight: bold;
+}
+
+/* -- Camera Selector -- */
+.camera-row {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin-bottom: 20px;
+}
+
+.camera-row .section-label {
+    margin-bottom: 0;
+    white-space: nowrap;
+}
+
+#camera-select {
+    flex: 1;
+    font-family: inherit;
+    font-size: 16px;
+    padding: 8px 12px;
+    background: #23273a;
+    color: #ddd;
+    border: 1px solid #3c3c46;
+    border-radius: 4px;
+    outline: none;
+    cursor: pointer;
+}
+
+#camera-select:focus {
+    border-color: #00ffc8;
+}
+
+#camera-ip {
+    flex: 1;
+    font-family: inherit;
+    font-size: 16px;
+    padding: 8px 12px;
+    background: #23273a;
+    color: #ddd;
+    border: 1px solid #3c3c46;
+    border-radius: 4px;
+    outline: none;
+}
+
+#camera-ip:focus {
+    border-color: #00ffc8;
+}
+
+/* -- Snapshot Canvas (IP camera display) -- */
+#snapshot-canvas {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+}
+
+/* -- High Scores -- */
+.high-scores {
+    font-size: 13px;
+    color: #8c8c8c;
+    margin-bottom: 16px;
+    min-height: 20px;
+}
+
+.high-scores .hs-title {
+    color: #b4b4b4;
+    font-weight: bold;
+    margin-bottom: 4px;
+}
+
+/* -- Start Button -- */
+#start-btn {
+    font-family: inherit;
+    font-size: 24px;
+    font-weight: bold;
+    padding: 12px 60px;
+    border: 2px solid #00ffc8;
+    border-radius: 6px;
+    background: transparent;
+    color: #00ffc8;
+    cursor: pointer;
+    letter-spacing: 2px;
+    transition: background 0.15s, color 0.15s;
+    margin-bottom: 12px;
+}
+
+#start-btn:hover {
+    background: #00ffc8;
+    color: #191923;
+}
+
+.error-msg {
+    color: #ff5050;
+    font-size: 14px;
+    min-height: 20px;
+}
+
+.hints {
+    font-size: 14px;
+    color: #646464;
+    margin-top: 8px;
+}
+
+/* -- Game Container -- */
+#game-container {
+    position: fixed;
+    inset: 0;
+    background: #000;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+#camera-video {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+}
+
+#overlay {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    pointer-events: none;
+    touch-action: none;
+}
+
+#ptz-banner {
+    position: absolute;
+    top: 10px;
+    left: 50%;
+    transform: translateX(-50%);
+    background: rgba(0,0,0,0.7);
+    color: #ffcc00;
+    padding: 6px 18px;
+    border-radius: 4px;
+    font-size: 13px;
+    z-index: 10;
+    pointer-events: none;
+}

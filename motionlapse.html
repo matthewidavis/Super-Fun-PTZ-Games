@@ -1,0 +1,2914 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MotionLapse</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/gifshot-plus@1.0.2/dist/gifshot.min.js"></script>
+    <style>
+        *, *::before, *::after { box-sizing: border-box; }
+
+        :root {
+            --bg-dark: #0f1419;
+            --bg-card: #1a1f26;
+            --bg-input: #252b33;
+            --bg-hover: #2d343e;
+            --border: #3a4350;
+            --text-primary: #f0f2f5;
+            --text-secondary: #8b949e;
+            --text-muted: #6b737d;
+            --accent-blue: #58a6ff;
+            --accent-green: #3fb950;
+            --accent-orange: #f0883e;
+            --accent-red: #f85149;
+            --accent-purple: #a371f7;
+            --radius: 12px;
+            --radius-sm: 8px;
+            --shadow: 0 4px 24px rgba(0,0,0,0.3);
+        }
+
+        /* Light theme */
+        [data-theme="light"] {
+            --bg-dark: #f5f7fa;
+            --bg-card: #ffffff;
+            --bg-input: #f0f2f5;
+            --bg-hover: #e8eaed;
+            --border: #d0d7de;
+            --text-primary: #1f2328;
+            --text-secondary: #57606a;
+            --text-muted: #8b949e;
+            --shadow: 0 4px 24px rgba(0,0,0,0.1);
+        }
+
+        body {
+            font-family: 'Inter', -apple-system, sans-serif;
+            background: linear-gradient(135deg, var(--bg-dark) 0%, #151b23 100%);
+            color: var(--text-primary);
+            margin: 0;
+            min-height: 100vh;
+            transition: background 0.3s ease, color 0.3s ease;
+        }
+
+        [data-theme="light"] body {
+            background: linear-gradient(135deg, #f5f7fa 0%, #e8eaed 100%);
+        }
+
+        /* Header */
+        .header {
+            background: var(--bg-card);
+            border-bottom: 1px solid var(--border);
+            padding: 1rem 2rem;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+        .logo {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            font-size: 1.5rem;
+            font-weight: 700;
+        }
+        .logo i { color: var(--accent-blue); }
+        .logo span {
+            background: linear-gradient(135deg, var(--accent-blue), var(--accent-purple));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        /* Status indicator */
+        .status-bar {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+        .status-indicator {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            padding: 6px 14px;
+            background: var(--bg-input);
+            border-radius: 20px;
+            font-size: 0.85rem;
+        }
+        .theme-toggle {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            background: var(--bg-input);
+            border: 1px solid var(--border);
+            color: var(--text-secondary);
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.1rem;
+            transition: all 0.2s ease;
+        }
+        .theme-toggle:hover {
+            background: var(--bg-hover);
+            color: var(--accent-orange);
+        }
+        .status-dot {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background: var(--text-muted);
+            transition: all 0.3s ease;
+        }
+        .status-dot.connected { background: var(--accent-green); box-shadow: 0 0 8px var(--accent-green); }
+        .status-dot.error { background: var(--accent-red); }
+        .status-dot.testing { background: var(--accent-orange); animation: pulse 1s infinite; }
+
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.4; }
+        }
+
+        /* Main container */
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 2rem;
+        }
+
+        /* Setup accordion */
+        .setup-accordion {
+            background: var(--bg-card);
+            border-radius: var(--radius);
+            border: 1px solid var(--border);
+            margin-bottom: 2rem;
+            overflow: hidden;
+        }
+        .setup-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 1rem 1.5rem;
+            cursor: pointer;
+            background: linear-gradient(135deg, rgba(88, 166, 255, 0.05), transparent);
+            border-bottom: 1px solid var(--border);
+            transition: all 0.2s ease;
+        }
+        .setup-header:hover {
+            background: linear-gradient(135deg, rgba(88, 166, 255, 0.1), transparent);
+        }
+        .setup-header-left {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+        .setup-title {
+            font-size: 1.1rem;
+            font-weight: 600;
+        }
+        .setup-status {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            padding: 4px 12px;
+            background: var(--bg-input);
+            border-radius: 20px;
+            font-size: 0.8rem;
+        }
+        .setup-status-dot {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background: var(--accent-red);
+            transition: all 0.3s ease;
+        }
+        .setup-status-dot.running {
+            background: var(--accent-green);
+            box-shadow: 0 0 8px var(--accent-green);
+            animation: pulse 1s infinite;
+        }
+        .setup-chevron {
+            transition: transform 0.3s ease;
+            color: var(--text-muted);
+        }
+        .setup-accordion.collapsed .setup-chevron {
+            transform: rotate(-90deg);
+        }
+        .setup-content {
+            max-height: 1000px;
+            overflow: hidden;
+            transition: max-height 0.3s ease;
+        }
+        .setup-accordion.collapsed .setup-content {
+            max-height: 0;
+        }
+        .setup-inner {
+            padding: 1.5rem;
+        }
+
+        /* Step cards */
+        .steps-container {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 1.5rem;
+        }
+
+        .step-card {
+            background: var(--bg-card);
+            border-radius: var(--radius);
+            border: 1px solid var(--border);
+            overflow: hidden;
+            transition: all 0.3s ease;
+        }
+        .step-card:hover {
+            border-color: var(--accent-blue);
+            box-shadow: var(--shadow);
+        }
+        .step-card.active {
+            border-color: var(--accent-blue);
+            box-shadow: 0 0 0 1px var(--accent-blue), var(--shadow);
+        }
+        .step-card.completed .step-header { background: linear-gradient(135deg, rgba(63, 185, 80, 0.1), transparent); }
+
+        .step-header {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            padding: 1rem 1.25rem;
+            background: linear-gradient(135deg, rgba(88, 166, 255, 0.05), transparent);
+            border-bottom: 1px solid var(--border);
+        }
+        .step-number {
+            width: 32px;
+            height: 32px;
+            border-radius: 50%;
+            background: var(--accent-blue);
+            color: white;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 600;
+            font-size: 0.9rem;
+        }
+        .step-card.completed .step-number {
+            background: var(--accent-green);
+        }
+        .step-card.completed .step-number::after {
+            content: '\f00c';
+            font-family: 'Font Awesome 6 Free';
+            font-weight: 900;
+        }
+        .step-card.completed .step-number span { display: none; }
+        .step-title {
+            font-weight: 600;
+            font-size: 1rem;
+        }
+        .step-subtitle {
+            font-size: 0.8rem;
+            color: var(--text-secondary);
+        }
+        .step-content {
+            padding: 1.25rem;
+        }
+
+        /* Form elements */
+        .form-group {
+            margin-bottom: 1rem;
+        }
+        .form-group:last-child {
+            margin-bottom: 0;
+        }
+        .form-label {
+            display: block;
+            font-size: 0.85rem;
+            font-weight: 500;
+            color: var(--text-secondary);
+            margin-bottom: 6px;
+        }
+        .form-input {
+            width: 100%;
+            padding: 10px 14px;
+            background: var(--bg-input);
+            border: 1px solid var(--border);
+            border-radius: var(--radius-sm);
+            color: var(--text-primary);
+            font-size: 0.95rem;
+            transition: all 0.2s ease;
+        }
+        .form-input:focus {
+            outline: none;
+            border-color: var(--accent-blue);
+            box-shadow: 0 0 0 3px rgba(88, 166, 255, 0.1);
+        }
+        .form-input::placeholder {
+            color: var(--text-muted);
+        }
+        .form-hint {
+            font-size: 0.75rem;
+            color: var(--text-muted);
+            margin-top: 4px;
+        }
+        .form-row {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 12px;
+        }
+
+        /* Input with button */
+        .input-group {
+            display: flex;
+            gap: 8px;
+        }
+        .input-group .form-input {
+            flex: 1;
+        }
+
+        /* Buttons */
+        .btn {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            padding: 10px 18px;
+            border: none;
+            border-radius: var(--radius-sm);
+            font-size: 0.9rem;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+        .btn:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+        .btn-primary {
+            background: var(--accent-blue);
+            color: white;
+        }
+        .btn-primary:hover:not(:disabled) {
+            background: #4393e6;
+            transform: translateY(-1px);
+        }
+        .btn-success {
+            background: var(--accent-green);
+            color: white;
+        }
+        .btn-success:hover:not(:disabled) {
+            background: #2ea043;
+        }
+        .btn-danger {
+            background: var(--accent-red);
+            color: white;
+        }
+        .btn-danger:hover:not(:disabled) {
+            background: #da3633;
+        }
+        .btn-secondary {
+            background: var(--bg-input);
+            color: var(--text-primary);
+            border: 1px solid var(--border);
+        }
+        .btn-secondary:hover:not(:disabled) {
+            background: var(--bg-hover);
+            border-color: var(--text-muted);
+        }
+        .btn-ghost {
+            background: transparent;
+            color: var(--text-secondary);
+            padding: 8px 12px;
+        }
+        .btn-ghost:hover:not(:disabled) {
+            background: var(--bg-hover);
+            color: var(--text-primary);
+        }
+        .btn-icon {
+            width: 36px;
+            height: 36px;
+            padding: 0;
+            border-radius: var(--radius-sm);
+        }
+        .btn-sm {
+            padding: 6px 12px;
+            font-size: 0.8rem;
+        }
+        .btn-lg {
+            padding: 14px 28px;
+            font-size: 1rem;
+        }
+
+        /* Preview section */
+        .preview-section {
+            background: var(--bg-card);
+            border-radius: var(--radius);
+            border: 1px solid var(--border);
+            padding: 1.5rem;
+            margin-bottom: 2rem;
+        }
+        .preview-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 1rem;
+        }
+        .preview-title {
+            font-size: 1.1rem;
+            font-weight: 600;
+        }
+        .preview-actions {
+            display: flex;
+            gap: 8px;
+        }
+        .preview-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 1.5rem;
+        }
+        .preview-box {
+            position: relative;
+        }
+        .preview-label {
+            position: absolute;
+            top: 12px;
+            left: 12px;
+            background: rgba(0,0,0,0.7);
+            padding: 4px 10px;
+            border-radius: 6px;
+            font-size: 0.75rem;
+            font-weight: 500;
+            z-index: 1;
+        }
+        canvas {
+            width: 100%;
+            aspect-ratio: 16/9;
+            background: var(--bg-dark);
+            border-radius: var(--radius-sm);
+            cursor: crosshair;
+        }
+        .preview-hint {
+            text-align: center;
+            font-size: 0.8rem;
+            color: var(--text-muted);
+            margin-top: 8px;
+        }
+        #videoPreviewCanvas.clickable {
+            cursor: pointer;
+        }
+        #videoPreviewCanvas.clickable:hover {
+            opacity: 0.9;
+        }
+        .gif-download-hint {
+            color: var(--accent-green);
+        }
+
+        /* Motion path section */
+        .motion-section {
+            background: var(--bg-card);
+            border-radius: var(--radius);
+            border: 1px solid var(--border);
+            padding: 1.5rem;
+            margin-bottom: 2rem;
+        }
+        .motion-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 1rem;
+        }
+        .motion-title {
+            font-size: 1.1rem;
+            font-weight: 600;
+        }
+
+        /* Mode toggle */
+        .mode-toggle {
+            display: flex;
+            background: var(--bg-input);
+            border-radius: var(--radius-sm);
+            padding: 4px;
+            margin-bottom: 1rem;
+        }
+        .mode-btn {
+            flex: 1;
+            padding: 10px 16px;
+            background: transparent;
+            border: none;
+            border-radius: 6px;
+            color: var(--text-secondary);
+            font-size: 0.85rem;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+        }
+        .mode-btn:hover {
+            color: var(--text-primary);
+        }
+        .mode-btn.active {
+            background: var(--accent-blue);
+            color: white;
+        }
+
+        /* Mode content panels */
+        .mode-content {
+            display: none;
+        }
+        .mode-content.active {
+            display: block;
+        }
+
+        /* Preset cards for preset mode */
+        .preset-cards {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 12px;
+            margin-bottom: 1rem;
+        }
+        .preset-card {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            padding: 16px 20px;
+            background: var(--bg-input);
+            border-radius: var(--radius-sm);
+            border: 2px solid transparent;
+            transition: all 0.2s ease;
+            min-width: 180px;
+        }
+        .preset-card:hover {
+            background: var(--bg-hover);
+        }
+        .preset-card.selected {
+            border-color: var(--accent-blue);
+            background: rgba(88, 166, 255, 0.05);
+        }
+        .preset-card-icon {
+            width: 44px;
+            height: 44px;
+            border-radius: 10px;
+            background: linear-gradient(135deg, var(--accent-blue), var(--accent-purple));
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.2rem;
+            color: white;
+        }
+        .preset-card-icon.start {
+            background: linear-gradient(135deg, var(--accent-green), #2ea043);
+        }
+        .preset-card-icon.end {
+            background: linear-gradient(135deg, var(--accent-orange), #d97706);
+        }
+        .preset-card-info {
+            flex: 1;
+        }
+        .preset-card-label {
+            font-weight: 600;
+            font-size: 0.95rem;
+            margin-bottom: 2px;
+        }
+        .preset-card-number {
+            font-size: 0.8rem;
+            color: var(--text-muted);
+        }
+        .preset-card-actions {
+            display: flex;
+            gap: 4px;
+        }
+
+        /* Preset number input */
+        .preset-number-input {
+            width: 60px;
+            padding: 8px 12px;
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            border-radius: 6px;
+            color: var(--text-primary);
+            font-size: 1rem;
+            font-weight: 600;
+            text-align: center;
+        }
+        .preset-number-input:focus {
+            outline: none;
+            border-color: var(--accent-blue);
+        }
+
+        /* Add preset button */
+        .add-preset-row {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 12px;
+            padding: 1rem;
+        }
+        .add-preset-input {
+            width: 80px;
+            padding: 10px 14px;
+            background: var(--bg-input);
+            border: 1px solid var(--border);
+            border-radius: var(--radius-sm);
+            color: var(--text-primary);
+            font-size: 0.95rem;
+            text-align: center;
+        }
+        .add-preset-input:focus {
+            outline: none;
+            border-color: var(--accent-blue);
+        }
+        .add-preset-input::placeholder {
+            color: var(--text-muted);
+        }
+
+        /* Motion presets */
+        .presets-row {
+            display: flex;
+            gap: 8px;
+            margin-bottom: 1rem;
+            flex-wrap: wrap;
+        }
+        .preset-btn {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            padding: 8px 14px;
+            background: var(--bg-input);
+            border: 1px solid var(--border);
+            border-radius: 20px;
+            color: var(--text-secondary);
+            font-size: 0.8rem;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+        .preset-btn:hover {
+            background: var(--bg-hover);
+            border-color: var(--accent-blue);
+            color: var(--accent-blue);
+        }
+        .preset-btn i {
+            font-size: 0.9rem;
+        }
+
+        /* Motion path canvas */
+        #motionPathCanvas {
+            width: 100%;
+            height: 200px;
+            background: var(--bg-dark);
+            border-radius: var(--radius-sm);
+            cursor: crosshair;
+            margin-bottom: 1rem;
+        }
+
+        /* Waypoint list */
+        .waypoint-list {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+        .waypoint-row {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            padding: 12px 16px;
+            background: var(--bg-input);
+            border-radius: var(--radius-sm);
+            border: 2px solid transparent;
+            transition: all 0.2s ease;
+        }
+        .waypoint-row:hover {
+            background: var(--bg-hover);
+        }
+        .waypoint-row.selected {
+            border-color: var(--accent-blue);
+            background: rgba(88, 166, 255, 0.05);
+        }
+        .waypoint-badge {
+            min-width: 60px;
+            padding: 4px 10px;
+            background: var(--accent-blue);
+            border-radius: 4px;
+            font-size: 0.75rem;
+            font-weight: 600;
+            text-align: center;
+            text-transform: uppercase;
+        }
+        .waypoint-badge.start { background: var(--accent-green); }
+        .waypoint-badge.end { background: var(--accent-orange); }
+        .waypoint-badge.mid { background: var(--accent-purple); }
+
+        .waypoint-fields {
+            display: flex;
+            gap: 12px;
+            flex: 1;
+        }
+        .waypoint-field {
+            display: flex;
+            flex-direction: column;
+            gap: 2px;
+        }
+        .waypoint-field label {
+            font-size: 0.7rem;
+            color: var(--text-muted);
+            text-transform: uppercase;
+        }
+        .waypoint-field input {
+            width: 80px;
+            padding: 6px 10px;
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            border-radius: 6px;
+            color: var(--text-primary);
+            font-size: 0.9rem;
+        }
+        .waypoint-field input:focus {
+            outline: none;
+            border-color: var(--accent-blue);
+        }
+        .waypoint-actions {
+            display: flex;
+            gap: 4px;
+        }
+
+        /* Add waypoint */
+        .add-waypoint-row {
+            display: flex;
+            justify-content: center;
+            padding: 1rem;
+        }
+
+        /* Capture section */
+        .capture-section {
+            background: var(--bg-card);
+            border-radius: var(--radius);
+            border: 1px solid var(--border);
+            padding: 1.5rem;
+            text-align: center;
+        }
+        .capture-status {
+            font-size: 1.5rem;
+            font-weight: 600;
+            margin-bottom: 0.5rem;
+        }
+        .capture-meta {
+            color: var(--text-secondary);
+            font-size: 0.9rem;
+            margin-bottom: 1.5rem;
+        }
+        .capture-buttons {
+            display: flex;
+            justify-content: center;
+            gap: 12px;
+            margin-bottom: 1rem;
+        }
+
+        /* Progress bar */
+        .progress-container {
+            margin-top: 1.5rem;
+            display: none;
+        }
+        .progress-container.visible {
+            display: block;
+        }
+        .progress-label {
+            display: flex;
+            justify-content: space-between;
+            font-size: 0.85rem;
+            color: var(--text-secondary);
+            margin-bottom: 8px;
+        }
+        .progress-bar {
+            height: 8px;
+            background: var(--bg-input);
+            border-radius: 4px;
+            overflow: hidden;
+        }
+        .progress-fill {
+            height: 100%;
+            background: linear-gradient(90deg, var(--accent-blue), var(--accent-purple));
+            border-radius: 4px;
+            transition: width 0.3s ease;
+            width: 0%;
+        }
+
+        /* Toast notifications */
+        .toast-container {
+            position: fixed;
+            bottom: 24px;
+            right: 24px;
+            z-index: 1000;
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+        .toast {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            padding: 14px 20px;
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            border-radius: var(--radius-sm);
+            box-shadow: var(--shadow);
+            animation: slideIn 0.3s ease;
+        }
+        .toast.success { border-left: 4px solid var(--accent-green); }
+        .toast.error { border-left: 4px solid var(--accent-red); }
+        .toast.info { border-left: 4px solid var(--accent-blue); }
+        @keyframes slideIn {
+            from { transform: translateX(100%); opacity: 0; }
+            to { transform: translateX(0); opacity: 1; }
+        }
+
+        /* Collapsible advanced settings */
+        .advanced-toggle {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            padding: 10px 0;
+            color: var(--text-secondary);
+            font-size: 0.85rem;
+            cursor: pointer;
+            border: none;
+            background: none;
+            width: 100%;
+        }
+        .advanced-toggle:hover {
+            color: var(--text-primary);
+        }
+        .advanced-toggle i {
+            transition: transform 0.2s ease;
+        }
+        .advanced-toggle.open i {
+            transform: rotate(180deg);
+        }
+        .advanced-content {
+            display: none;
+            padding-top: 1rem;
+            border-top: 1px solid var(--border);
+            margin-top: 0.5rem;
+        }
+        .advanced-content.open {
+            display: block;
+        }
+
+        /* Output options panel */
+        .output-options {
+            background: var(--bg-input);
+            border-radius: var(--radius-sm);
+            margin-top: 1rem;
+            overflow: hidden;
+        }
+        .output-options-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 0.75rem 1rem;
+            cursor: pointer;
+            transition: background 0.2s ease;
+        }
+        .output-options-header:hover {
+            background: var(--bg-hover);
+        }
+        .output-options-title {
+            font-size: 0.85rem;
+            font-weight: 600;
+            color: var(--text-secondary);
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        .output-options-chevron {
+            color: var(--text-muted);
+            font-size: 0.8rem;
+            transition: transform 0.3s ease;
+        }
+        .output-options.collapsed .output-options-chevron {
+            transform: rotate(-90deg);
+        }
+        .output-options-content {
+            max-height: 200px;
+            overflow: hidden;
+            transition: max-height 0.3s ease, padding 0.3s ease;
+            padding: 0 1rem 1rem 1rem;
+        }
+        .output-options.collapsed .output-options-content {
+            max-height: 0;
+            padding: 0 1rem;
+        }
+        .output-row {
+            display: flex;
+            gap: 1rem;
+            flex-wrap: wrap;
+            align-items: center;
+        }
+        .output-option {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        .output-option label {
+            font-size: 0.85rem;
+            color: var(--text-secondary);
+        }
+        .output-option input[type="number"] {
+            width: 70px;
+            padding: 6px 10px;
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            border-radius: 6px;
+            color: var(--text-primary);
+            font-size: 0.9rem;
+        }
+        .output-option select {
+            padding: 6px 10px;
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            border-radius: 6px;
+            color: var(--text-primary);
+            font-size: 0.9rem;
+        }
+
+        /* Responsive */
+        @media (max-width: 1024px) {
+            .steps-container {
+                grid-template-columns: 1fr;
+            }
+            .preview-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+        @media (max-width: 768px) {
+            .header {
+                flex-direction: column;
+                gap: 1rem;
+                padding: 1rem;
+            }
+            .logo {
+                font-size: 1.25rem;
+            }
+            .container {
+                padding: 0.75rem;
+            }
+            .waypoint-row {
+                flex-wrap: wrap;
+                padding: 10px 12px;
+            }
+            .waypoint-fields {
+                width: 100%;
+                justify-content: space-between;
+            }
+            .waypoint-field input {
+                width: 65px;
+                padding: 8px;
+            }
+            .waypoint-actions {
+                width: 100%;
+                justify-content: flex-end;
+                margin-top: 8px;
+            }
+            .preset-cards {
+                flex-direction: column;
+            }
+            .preset-card {
+                width: 100%;
+            }
+            .presets-row {
+                justify-content: center;
+            }
+            .preset-btn {
+                flex: 1 1 calc(50% - 4px);
+                justify-content: center;
+                font-size: 0.75rem;
+                padding: 8px 10px;
+            }
+            .mode-toggle {
+                flex-direction: column;
+            }
+            .mode-btn {
+                padding: 12px;
+            }
+            .btn-lg {
+                padding: 12px 20px;
+                font-size: 0.9rem;
+            }
+            .capture-buttons {
+                flex-wrap: wrap;
+            }
+            .output-row {
+                flex-direction: column;
+                align-items: flex-start;
+            }
+        }
+        @media (max-width: 480px) {
+            .step-header {
+                padding: 0.75rem 1rem;
+            }
+            .step-content {
+                padding: 1rem;
+            }
+            .form-row {
+                grid-template-columns: 1fr;
+            }
+            .waypoint-badge {
+                min-width: 50px;
+                font-size: 0.7rem;
+            }
+        }
+
+        /* Touch-friendly adjustments */
+        @media (pointer: coarse) {
+            .btn-icon {
+                width: 44px;
+                height: 44px;
+            }
+            .waypoint-field input,
+            .preset-number-input,
+            .form-input {
+                min-height: 44px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <header class="header">
+        <div class="logo">
+            <i class="fas fa-video"></i>
+            <span>MotionLapse</span>
+        </div>
+        <div class="status-bar">
+            <div class="status-indicator">
+                <div class="status-dot" id="connectionDot"></div>
+                <span id="connectionStatus">Not connected</span>
+            </div>
+            <button class="theme-toggle" id="themeToggle" title="Toggle theme">
+                <i class="fas fa-sun"></i>
+            </button>
+        </div>
+    </header>
+
+    <div class="container">
+        <!-- Preview Section -->
+        <div class="preview-section">
+            <div class="preview-header">
+                <div class="preview-title"><i class="fas fa-eye"></i> Preview</div>
+                <div class="preview-actions">
+                    <button class="btn btn-ghost btn-sm" id="testSnapshotBtn" title="Test snapshot">
+                        <i class="fas fa-camera"></i> Test Snapshot
+                    </button>
+                    <button class="btn btn-ghost btn-sm" id="refreshPreviewBtn" title="Refresh preview">
+                        <i class="fas fa-sync-alt"></i> Refresh
+                    </button>
+                </div>
+            </div>
+            <div class="preview-grid">
+                <div class="preview-box">
+                    <div class="preview-label">Live Camera</div>
+                    <canvas id="previewCanvas" width="640" height="360"></canvas>
+                    <div class="preview-hint">Click to set selected waypoint position</div>
+                </div>
+                <div class="preview-box">
+                    <div class="preview-label">GIF Preview</div>
+                    <canvas id="videoPreviewCanvas" width="640" height="360"></canvas>
+                    <div class="preview-hint" id="gifPreviewHint">Click or right-click to save GIF</div>
+                </div>
+            </div>
+            <!-- Output Options Accordion -->
+            <div class="output-options collapsed" id="outputOptionsAccordion">
+                <div class="output-options-header" id="outputOptionsHeader">
+                    <div class="output-options-title"><i class="fas fa-sliders-h"></i> Output Options</div>
+                    <i class="fas fa-chevron-down output-options-chevron"></i>
+                </div>
+                <div class="output-options-content">
+                    <div class="output-row">
+                        <div class="output-option">
+                            <label for="gifSpeed">GIF Speed (ms/frame):</label>
+                            <input type="number" id="gifSpeed" value="100" min="20" max="1000" step="10">
+                        </div>
+                        <div class="output-option">
+                            <label for="outputFormat">Format:</label>
+                            <select id="outputFormat">
+                                <option value="gif">GIF</option>
+                                <option value="webm">WebM Video</option>
+                            </select>
+                        </div>
+                        <div class="output-option">
+                            <label>
+                                <input type="checkbox" id="notifyOnComplete" checked> Notify on complete
+                            </label>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Setup Accordion -->
+        <div class="setup-accordion" id="setupAccordion">
+            <div class="setup-header" id="setupHeader">
+                <div class="setup-header-left">
+                    <i class="fas fa-cog"></i>
+                    <span class="setup-title">Setup</span>
+                    <div class="setup-status">
+                        <div class="setup-status-dot" id="captureStatusDot"></div>
+                        <span id="captureStatusText">Idle</span>
+                    </div>
+                </div>
+                <i class="fas fa-chevron-down setup-chevron"></i>
+            </div>
+            <div class="setup-content">
+                <div class="setup-inner">
+                    <!-- Step Cards -->
+                    <div class="steps-container">
+                        <!-- Step 1: Connect -->
+                        <div class="step-card" id="step1Card">
+                            <div class="step-header">
+                                <div class="step-number"><span>1</span></div>
+                                <div>
+                                    <div class="step-title">Connect Camera</div>
+                                    <div class="step-subtitle">Enter your PTZ camera IP</div>
+                                </div>
+                            </div>
+                            <div class="step-content">
+                                <div class="form-group">
+                                    <label class="form-label">Camera IP Address</label>
+                                    <div class="input-group">
+                                        <input type="text" class="form-input" id="ipAddress" placeholder="192.168.1.100">
+                                        <button class="btn btn-secondary" id="testConnectionBtn" title="Test Connection">
+                                            <i class="fas fa-plug"></i>
+                                        </button>
+                                    </div>
+                                    <div class="form-hint">For authentication: user:pass@192.168.1.100</div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Step 2: Configure -->
+                        <div class="step-card" id="step2Card">
+                            <div class="step-header">
+                                <div class="step-number"><span>2</span></div>
+                                <div>
+                                    <div class="step-title">Set Timing</div>
+                                    <div class="step-subtitle">Configure capture settings</div>
+                                </div>
+                            </div>
+                            <div class="step-content">
+                                <div class="form-row">
+                                    <div class="form-group">
+                                        <label class="form-label">Interval (seconds)</label>
+                                        <input type="number" class="form-input" id="interval" placeholder="10" min="1">
+                                    </div>
+                                    <div class="form-group">
+                                        <label class="form-label">Duration (minutes)</label>
+                                        <input type="number" class="form-input" id="duration" placeholder="60" min="1">
+                                    </div>
+                                </div>
+                                <div class="form-group">
+                                    <div id="frameEstimate" class="form-hint" style="color: var(--accent-blue);"></div>
+                                </div>
+
+                                <button class="advanced-toggle" id="advancedToggle">
+                                    <i class="fas fa-chevron-down"></i>
+                                    Advanced Settings
+                                </button>
+                                <div class="advanced-content" id="advancedContent">
+                                    <div class="form-row">
+                                        <div class="form-group">
+                                            <label class="form-label">Initial Move Time (ms)</label>
+                                            <input type="number" class="form-input" id="initialMoveTime" value="5000" min="0" step="100">
+                                            <div class="form-hint">Extra time for first position</div>
+                                        </div>
+                                        <div class="form-group">
+                                            <label class="form-label">Settle Time (ms)</label>
+                                            <input type="number" class="form-input" id="settleTime" value="3000" min="0" step="100">
+                                        </div>
+                                    </div>
+                                    <div class="form-row">
+                                        <div class="form-group">
+                                            <label class="form-label">Pan Speed (1-24)</label>
+                                            <input type="number" class="form-input" id="panSpeed" value="12" min="1" max="24">
+                                        </div>
+                                        <div class="form-group">
+                                            <label class="form-label">Tilt Speed (1-20)</label>
+                                            <input type="number" class="form-input" id="tiltSpeed" value="10" min="1" max="20">
+                                        </div>
+                                    </div>
+                                    <div class="form-row">
+                                        <div class="form-group">
+                                            <label class="form-label">Zoom Speed (0-7)</label>
+                                            <input type="number" class="form-input" id="zoomSpeed" value="3" min="0" max="7">
+                                        </div>
+                                        <div class="form-group"></div>
+                                    </div>
+                                    <div class="form-group">
+                                        <label class="form-label">Scheduled Start Time (optional)</label>
+                                        <input type="datetime-local" class="form-input" id="startTime">
+                                    </div>
+                                    <div class="form-group">
+                                        <label class="form-label">Scheduled End Time (optional)</label>
+                                        <input type="datetime-local" class="form-input" id="endTime">
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Step 3: Capture -->
+                        <div class="step-card" id="step3Card">
+                            <div class="step-header">
+                                <div class="step-number"><span>3</span></div>
+                                <div>
+                                    <div class="step-title">Capture</div>
+                                    <div class="step-subtitle">Start recording your motionlapse</div>
+                                </div>
+                            </div>
+                            <div class="step-content">
+                                <div class="capture-status" id="captureStatus">Ready</div>
+                                <div class="capture-meta" id="captureMeta">Configure settings to begin</div>
+                                <div class="capture-buttons">
+                                    <button class="btn btn-success btn-lg" id="startBtn" disabled>
+                                        <i class="fas fa-play"></i> Start
+                                    </button>
+                                    <button class="btn btn-danger btn-lg" id="stopBtn" disabled>
+                                        <i class="fas fa-stop"></i> Stop
+                                    </button>
+                                </div>
+
+                                <div class="progress-container" id="progressContainer">
+                                    <div class="progress-label">
+                                        <span id="progressLabel">Generating GIF...</span>
+                                        <span id="progressPercent">0%</span>
+                                    </div>
+                                    <div class="progress-bar">
+                                        <div class="progress-fill" id="progressFill"></div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Motion Path Section -->
+        <div class="motion-section">
+            <div class="motion-header">
+                <div class="motion-title"><i class="fas fa-route"></i> Motion Path</div>
+                <div class="preview-actions">
+                    <button class="btn btn-secondary btn-sm" id="previewPathBtn" disabled>
+                        <i class="fas fa-play-circle"></i> Preview Path
+                    </button>
+                    <button class="btn btn-danger btn-sm" id="cancelPreviewBtn" style="display:none;">
+                        <i class="fas fa-stop"></i> Cancel
+                    </button>
+                </div>
+            </div>
+
+            <!-- Mode Toggle -->
+            <div class="mode-toggle">
+                <button class="mode-btn active" data-mode="absolute">
+                    <i class="fas fa-crosshairs"></i> Absolute Position
+                </button>
+                <button class="mode-btn" data-mode="preset">
+                    <i class="fas fa-bookmark"></i> Camera Presets
+                </button>
+            </div>
+
+            <!-- Absolute Position Mode -->
+            <div class="mode-content active" id="absoluteMode">
+                <!-- Motion Presets -->
+                <div class="presets-row">
+                    <button class="preset-btn" data-preset="pan-left-right">
+                        <i class="fas fa-arrows-alt-h"></i> Pan Left → Right
+                    </button>
+                    <button class="preset-btn" data-preset="pan-right-left">
+                        <i class="fas fa-arrows-alt-h"></i> Pan Right → Left
+                    </button>
+                    <button class="preset-btn" data-preset="zoom-in">
+                        <i class="fas fa-search-plus"></i> Zoom In
+                    </button>
+                    <button class="preset-btn" data-preset="zoom-out">
+                        <i class="fas fa-search-minus"></i> Zoom Out
+                    </button>
+                    <button class="preset-btn" data-preset="tilt-up">
+                        <i class="fas fa-arrow-up"></i> Tilt Up
+                    </button>
+                    <button class="preset-btn" data-preset="sweep">
+                        <i class="fas fa-expand-arrows-alt"></i> Full Sweep
+                    </button>
+                </div>
+
+                <canvas id="motionPathCanvas" width="1060" height="200"></canvas>
+
+                <!-- Waypoint List -->
+                <div class="waypoint-list" id="waypointList"></div>
+
+                <div class="add-waypoint-row">
+                    <button class="btn btn-secondary" id="addWaypointBtn">
+                        <i class="fas fa-plus"></i> Add Waypoint
+                    </button>
+                </div>
+            </div>
+
+            <!-- Camera Preset Mode -->
+            <div class="mode-content" id="presetMode">
+                <div class="form-hint" style="margin-bottom: 1rem; text-align: center;">
+                    Add camera presets in the order you want the camera to move through them during capture.
+                </div>
+
+                <!-- Preset Cards -->
+                <div class="preset-cards" id="presetCards"></div>
+
+                <div class="add-preset-row">
+                    <input type="number" class="add-preset-input" id="newPresetNumber" placeholder="#" min="1" max="255">
+                    <button class="btn btn-secondary" id="addPresetBtn">
+                        <i class="fas fa-plus"></i> Add Preset
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Toast Container -->
+    <div class="toast-container" id="toastContainer"></div>
+
+    <script>
+    // ===== APPLICATION STATE =====
+    const state = {
+        motionMode: 'absolute', // 'absolute' or 'preset'
+        // Absolute mode: keyframes with pan/tilt/zoom
+        keyframes: [],
+        nextKeyframeId: 1,
+        selectedKeyframeId: null,
+        // Preset mode: list of camera preset numbers
+        cameraPresets: [],
+        nextPresetId: 1,
+        selectedPresetId: null,
+        connectionStatus: 'disconnected', // 'disconnected', 'testing', 'connected', 'error'
+        ptzConfig: {
+            urlTemplate: 'http://{ip}/cgi-bin/ptzctrl.cgi?ptzcmd&abs&{pan_speed}&{tilt_speed}&{pan_hex}&{tilt_hex}',
+            zoomUrlTemplate: 'http://{ip}/cgi-bin/ptzctrl.cgi?ptzcmd&zoomto&{zoom_speed}&{zoom_hex}',
+            presetUrlTemplate: 'http://{ip}/cgi-bin/ptzctrl.cgi?ptzcmd&poscall&{preset_number}',
+            initialMoveTimeMs: 5000,
+            settleTimeMs: 3000,
+            panMin: -170, panMax: 170,
+            tiltMin: -30, tiltMax: 90,
+            zoomMin: 0, zoomMax: 16384,
+            panSpeed: 12, tiltSpeed: 10, zoomSpeed: 3,
+            viscaMode: true,
+        },
+        capture: {
+            running: false,
+            capturedFrames: [],
+            animatedImages: [],
+            currentFrameIndex: 0,
+            totalFrames: 0,
+            gifBlob: null,
+        },
+        preview: {
+            running: false,
+            currentT: undefined,
+        },
+        animationLoopStarted: false,
+        dragging: null,
+    };
+
+    // ===== UTILITY FUNCTIONS =====
+    function sleep(ms) {
+        return new Promise(resolve => setTimeout(resolve, ms));
+    }
+
+    function clamp(val, min, max) {
+        return Math.max(min, Math.min(max, val));
+    }
+
+    // ===== TOAST NOTIFICATIONS =====
+    function showToast(message, type = 'info') {
+        const container = document.getElementById('toastContainer');
+        const toast = document.createElement('div');
+        toast.className = `toast ${type}`;
+
+        const icons = { success: 'check-circle', error: 'exclamation-circle', info: 'info-circle' };
+        toast.innerHTML = `<i class="fas fa-${icons[type]}"></i><span>${message}</span>`;
+
+        container.appendChild(toast);
+        setTimeout(() => {
+            toast.style.animation = 'slideIn 0.3s ease reverse';
+            setTimeout(() => toast.remove(), 300);
+        }, 3000);
+    }
+
+    // ===== CONNECTION STATUS =====
+    function updateConnectionStatus(status, message) {
+        state.connectionStatus = status;
+        const dot = document.getElementById('connectionDot');
+        const text = document.getElementById('connectionStatus');
+
+        dot.className = 'status-dot';
+        if (status === 'connected') {
+            dot.classList.add('connected');
+            text.textContent = message || 'Connected';
+            document.getElementById('step1Card').classList.add('completed');
+        } else if (status === 'testing') {
+            dot.classList.add('testing');
+            text.textContent = 'Testing...';
+        } else if (status === 'error') {
+            dot.classList.add('error');
+            text.textContent = message || 'Connection failed';
+        } else {
+            text.textContent = 'Not connected';
+            document.getElementById('step1Card').classList.remove('completed');
+        }
+        updateStepStates();
+    }
+
+    async function testConnection() {
+        const ip = document.getElementById('ipAddress').value;
+        if (!ip) {
+            showToast('Please enter a camera IP address', 'error');
+            return;
+        }
+
+        updateConnectionStatus('testing');
+
+        try {
+            await refreshPreview(ip);
+            updateConnectionStatus('connected', 'Connected');
+            showToast('Camera connected successfully!', 'success');
+        } catch (e) {
+            updateConnectionStatus('error', 'Could not connect');
+            showToast('Connection failed. Check IP and try again.', 'error');
+        }
+    }
+
+    // ===== STEP STATES =====
+    function updateStepStates() {
+        const ip = document.getElementById('ipAddress').value;
+        const interval = document.getElementById('interval').value;
+        const duration = document.getElementById('duration').value;
+        const hasIP = ip && (ip.match(/\b(?:[0-9]{1,3}\.){3}[0-9]{1,3}\b/) || ip.includes('@'));
+        const hasConfig = interval && duration;
+
+        // Check path based on current mode
+        const hasPath = state.motionMode === 'absolute'
+            ? state.keyframes.length >= 2
+            : state.cameraPresets.length >= 2;
+
+        // Step 2 active when step 1 complete
+        document.getElementById('step2Card').classList.toggle('active', hasIP && !hasConfig);
+        document.getElementById('step2Card').classList.toggle('completed', hasIP && hasConfig);
+
+        // Step 3 active when steps 1 & 2 complete
+        document.getElementById('step3Card').classList.toggle('active', hasIP && hasConfig && hasPath);
+
+        updateButtons();
+        updateFrameEstimate();
+    }
+
+    function updateFrameEstimate() {
+        const interval = parseFloat(document.getElementById('interval').value) || 0;
+        const duration = parseFloat(document.getElementById('duration').value) || 0;
+        const estimateEl = document.getElementById('frameEstimate');
+
+        if (interval > 0 && duration > 0) {
+            const frames = Math.ceil((duration * 60) / interval);
+            const gifDuration = frames * 0.1; // 100ms per frame in GIF
+            estimateEl.textContent = `≈ ${frames} frames → ${gifDuration.toFixed(1)}s GIF`;
+        } else {
+            estimateEl.textContent = '';
+        }
+    }
+
+    // ===== PTZ COMMAND SYSTEM =====
+    function toHex4(val) {
+        val = Math.round(val);
+        if (val < 0) val = (val + 65536) & 0xFFFF;
+        return (val & 0xFFFF).toString(16).toUpperCase().padStart(4, '0');
+    }
+
+    function viscaDegToHex(degrees) {
+        const units = Math.round(Math.abs(degrees) * 14.4);
+        if (degrees >= 0) {
+            return toHex4(units);
+        } else {
+            return toHex4(65536 - units);
+        }
+    }
+
+    function buildUrl(template, ipAddress, pan, tilt, zoom) {
+        const cfg = state.ptzConfig;
+        const panHex = cfg.viscaMode ? viscaDegToHex(pan) : toHex4(pan);
+        const tiltHex = cfg.viscaMode ? viscaDegToHex(tilt) : toHex4(tilt);
+        const zoomHex = toHex4(zoom);
+
+        return template
+            .replace(/\{ip\}/g, ipAddress)
+            .replace(/\{pan\}/g, Math.round(pan))
+            .replace(/\{tilt\}/g, Math.round(tilt))
+            .replace(/\{zoom\}/g, Math.round(zoom))
+            .replace(/\{pan_hex\}/g, panHex)
+            .replace(/\{tilt_hex\}/g, tiltHex)
+            .replace(/\{zoom_hex\}/g, zoomHex)
+            .replace(/\{pan_speed\}/g, cfg.panSpeed)
+            .replace(/\{tilt_speed\}/g, cfg.tiltSpeed)
+            .replace(/\{zoom_speed\}/g, cfg.zoomSpeed);
+    }
+
+    async function fireRequest(url) {
+        try {
+            await fetch(url, { mode: 'no-cors', cache: 'no-store' });
+        } catch (e) {
+            const img = new Image();
+            img.src = url + (url.includes('?') ? '&' : '?') + '_t=' + Date.now();
+        }
+    }
+
+    async function sendPtzCommand(ipAddress, pan, tilt, zoom) {
+        const ptzUrl = buildUrl(state.ptzConfig.urlTemplate, ipAddress, pan, tilt, zoom);
+        if (ptzUrl) await fireRequest(ptzUrl);
+
+        const zoomTemplate = state.ptzConfig.zoomUrlTemplate;
+        if (zoomTemplate) {
+            const zoomUrl = buildUrl(zoomTemplate, ipAddress, pan, tilt, zoom);
+            if (zoomUrl) await fireRequest(zoomUrl);
+        }
+    }
+
+    // ===== INTERPOLATION =====
+    function interpolatePtz(t, keyframes) {
+        if (!keyframes || keyframes.length === 0) return { pan: 0, tilt: 0, zoom: 1 };
+        t = clamp(t, 0, 1);
+
+        if (keyframes.length === 1) {
+            return { pan: keyframes[0].pan, tilt: keyframes[0].tilt, zoom: keyframes[0].zoom };
+        }
+
+        const segments = keyframes.length - 1;
+        const scaled = t * segments;
+        const i = Math.min(Math.floor(scaled), segments - 1);
+        const localT = scaled - i;
+
+        const kfA = keyframes[i];
+        const kfB = keyframes[i + 1];
+
+        return {
+            pan:  kfA.pan  + (kfB.pan  - kfA.pan)  * localT,
+            tilt: kfA.tilt + (kfB.tilt - kfA.tilt) * localT,
+            zoom: kfA.zoom + (kfB.zoom - kfA.zoom) * localT,
+        };
+    }
+
+    // ===== KEYFRAME MANAGEMENT =====
+    function addKeyframe(pan, tilt, zoom) {
+        const cfg = state.ptzConfig;
+        const kf = {
+            id: state.nextKeyframeId++,
+            pan: clamp(pan, cfg.panMin, cfg.panMax),
+            tilt: clamp(tilt, cfg.tiltMin, cfg.tiltMax),
+            zoom: clamp(zoom, cfg.zoomMin, cfg.zoomMax),
+        };
+        state.keyframes.push(kf);
+        state.selectedKeyframeId = kf.id;
+        onKeyframesChanged();
+        return kf;
+    }
+
+    function removeKeyframe(id) {
+        if (state.keyframes.length <= 2) return;
+        state.keyframes = state.keyframes.filter(kf => kf.id !== id);
+        if (state.selectedKeyframeId === id) {
+            state.selectedKeyframeId = state.keyframes[0]?.id || null;
+        }
+        onKeyframesChanged();
+    }
+
+    function moveKeyframe(id, direction) {
+        const idx = state.keyframes.findIndex(k => k.id === id);
+        if (idx < 0) return;
+        const newIdx = idx + direction;
+        if (newIdx < 0 || newIdx >= state.keyframes.length) return;
+        const temp = state.keyframes[idx];
+        state.keyframes[idx] = state.keyframes[newIdx];
+        state.keyframes[newIdx] = temp;
+        onKeyframesChanged();
+    }
+
+    function updateKeyframe(id, field, value) {
+        const kf = state.keyframes.find(k => k.id === id);
+        if (!kf) return;
+        const cfg = state.ptzConfig;
+
+        if (field === 'pan') {
+            kf.pan = clamp(parseFloat(value) || 0, cfg.panMin, cfg.panMax);
+        } else if (field === 'tilt') {
+            kf.tilt = clamp(parseFloat(value) || 0, cfg.tiltMin, cfg.tiltMax);
+        } else if (field === 'zoom') {
+            kf.zoom = clamp(parseFloat(value) || 0, cfg.zoomMin, cfg.zoomMax);
+        }
+        onKeyframesChanged();
+    }
+
+    function selectKeyframe(id) {
+        state.selectedKeyframeId = id;
+        renderWaypointList();
+        drawMotionPath();
+    }
+
+    function onKeyframesChanged() {
+        renderWaypointList();
+        drawMotionPath();
+        updateButtons();
+        updateStepStates();
+    }
+
+    // ===== MOTION PRESETS =====
+    function applyMotionPreset(preset) {
+        const cfg = state.ptzConfig;
+        state.keyframes = [];
+        state.nextKeyframeId = 1;
+
+        switch(preset) {
+            case 'pan-left-right':
+                addKeyframe(-150, 30, 8192);
+                addKeyframe(150, 30, 8192);
+                break;
+            case 'pan-right-left':
+                addKeyframe(150, 30, 8192);
+                addKeyframe(-150, 30, 8192);
+                break;
+            case 'zoom-in':
+                addKeyframe(0, 30, 0);
+                addKeyframe(0, 30, 16384);
+                break;
+            case 'zoom-out':
+                addKeyframe(0, 30, 16384);
+                addKeyframe(0, 30, 0);
+                break;
+            case 'tilt-up':
+                addKeyframe(0, -20, 8192);
+                addKeyframe(0, 80, 8192);
+                break;
+            case 'sweep':
+                addKeyframe(-150, 0, 4000);
+                addKeyframe(0, 60, 8192);
+                addKeyframe(150, 0, 4000);
+                break;
+        }
+        showToast('Motion preset applied', 'success');
+    }
+
+    // ===== CAMERA PRESET MANAGEMENT (Preset Mode) =====
+    function addCameraPreset(presetNumber) {
+        if (!presetNumber || presetNumber < 1 || presetNumber > 255) {
+            showToast('Enter a valid preset number (1-255)', 'error');
+            return null;
+        }
+        const preset = {
+            id: state.nextPresetId++,
+            number: parseInt(presetNumber),
+        };
+        state.cameraPresets.push(preset);
+        state.selectedPresetId = preset.id;
+        onCameraPresetsChanged();
+        return preset;
+    }
+
+    function removeCameraPreset(id) {
+        if (state.cameraPresets.length <= 1) return;
+        state.cameraPresets = state.cameraPresets.filter(p => p.id !== id);
+        if (state.selectedPresetId === id) {
+            state.selectedPresetId = state.cameraPresets[0]?.id || null;
+        }
+        onCameraPresetsChanged();
+    }
+
+    function moveCameraPreset(id, direction) {
+        const idx = state.cameraPresets.findIndex(p => p.id === id);
+        if (idx < 0) return;
+        const newIdx = idx + direction;
+        if (newIdx < 0 || newIdx >= state.cameraPresets.length) return;
+        const temp = state.cameraPresets[idx];
+        state.cameraPresets[idx] = state.cameraPresets[newIdx];
+        state.cameraPresets[newIdx] = temp;
+        onCameraPresetsChanged();
+    }
+
+    function updateCameraPreset(id, newNumber) {
+        const preset = state.cameraPresets.find(p => p.id === id);
+        if (!preset) return;
+        const num = parseInt(newNumber);
+        if (num >= 1 && num <= 255) {
+            preset.number = num;
+            onCameraPresetsChanged();
+        }
+    }
+
+    function selectCameraPreset(id) {
+        state.selectedPresetId = id;
+        renderPresetCards();
+    }
+
+    function onCameraPresetsChanged() {
+        renderPresetCards();
+        updateButtons();
+        updateStepStates();
+    }
+
+    // ===== PRESET CARD RENDERING =====
+    function renderPresetCards() {
+        const container = document.getElementById('presetCards');
+        container.innerHTML = '';
+        const count = state.cameraPresets.length;
+
+        if (count === 0) {
+            container.innerHTML = '<div class="form-hint" style="width: 100%; text-align: center; padding: 2rem;">No presets added yet. Enter a preset number below to get started.</div>';
+            return;
+        }
+
+        state.cameraPresets.forEach((preset, idx) => {
+            const card = document.createElement('div');
+            card.className = 'preset-card' + (preset.id === state.selectedPresetId ? ' selected' : '');
+            card.addEventListener('click', (e) => {
+                if (e.target.tagName !== 'INPUT' && e.target.tagName !== 'BUTTON' && !e.target.closest('button')) {
+                    selectCameraPreset(preset.id);
+                }
+            });
+
+            const isFirst = idx === 0;
+            const isLast = idx === count - 1;
+            const iconClass = isFirst ? 'start' : (isLast ? 'end' : '');
+            const label = isFirst ? 'Start' : (isLast ? 'End' : `Step ${idx + 1}`);
+
+            card.innerHTML = `
+                <div class="preset-card-icon ${iconClass}">
+                    <i class="fas fa-bookmark"></i>
+                </div>
+                <div class="preset-card-info">
+                    <div class="preset-card-label">${label}</div>
+                    <div class="preset-card-number">
+                        Preset <input type="number" class="preset-number-input" value="${preset.number}"
+                            min="1" max="255" data-id="${preset.id}">
+                    </div>
+                </div>
+                <div class="preset-card-actions">
+                    <button class="btn btn-ghost btn-icon" title="Move left" data-move-left="${preset.id}" ${isFirst ? 'disabled' : ''}>
+                        <i class="fas fa-chevron-left"></i>
+                    </button>
+                    <button class="btn btn-ghost btn-icon" title="Move right" data-move-right="${preset.id}" ${isLast ? 'disabled' : ''}>
+                        <i class="fas fa-chevron-right"></i>
+                    </button>
+                    <button class="btn btn-ghost btn-icon" title="Go to preset" data-goto-preset="${preset.id}">
+                        <i class="fas fa-crosshairs"></i>
+                    </button>
+                    <button class="btn btn-ghost btn-icon" title="Remove" data-remove-preset="${preset.id}" ${count <= 1 ? 'disabled' : ''}>
+                        <i class="fas fa-trash"></i>
+                    </button>
+                </div>
+            `;
+            container.appendChild(card);
+        });
+
+        // Attach events
+        container.querySelectorAll('.preset-number-input').forEach(input => {
+            input.addEventListener('change', () => {
+                updateCameraPreset(parseInt(input.dataset.id), input.value);
+            });
+        });
+        container.querySelectorAll('[data-goto-preset]').forEach(btn => {
+            btn.addEventListener('click', () => goToCameraPreset(parseInt(btn.dataset.gotoPreset)));
+        });
+        container.querySelectorAll('[data-remove-preset]').forEach(btn => {
+            btn.addEventListener('click', () => removeCameraPreset(parseInt(btn.dataset.removePreset)));
+        });
+        container.querySelectorAll('[data-move-left]').forEach(btn => {
+            btn.addEventListener('click', () => moveCameraPreset(parseInt(btn.dataset.moveLeft), -1));
+        });
+        container.querySelectorAll('[data-move-right]').forEach(btn => {
+            btn.addEventListener('click', () => moveCameraPreset(parseInt(btn.dataset.moveRight), 1));
+        });
+    }
+
+    async function goToCameraPreset(id) {
+        const ipAddress = document.getElementById('ipAddress').value;
+        if (!ipAddress) {
+            showToast('Enter camera IP first', 'error');
+            return;
+        }
+
+        const preset = state.cameraPresets.find(p => p.id === id);
+        if (!preset) return;
+
+        selectCameraPreset(id);
+        showToast(`Moving to preset ${preset.number}...`, 'info');
+        await sendPresetCommand(ipAddress, preset.number);
+        await sleep(state.ptzConfig.settleTimeMs);
+        await refreshPreview(ipAddress);
+    }
+
+    async function sendPresetCommand(ipAddress, presetNumber) {
+        const url = state.ptzConfig.presetUrlTemplate
+            .replace(/\{ip\}/g, ipAddress)
+            .replace(/\{preset_number\}/g, presetNumber);
+        await fireRequest(url);
+    }
+
+    // ===== MODE SWITCHING =====
+    function setMotionMode(mode) {
+        state.motionMode = mode;
+
+        // Update toggle buttons
+        document.querySelectorAll('.mode-btn').forEach(btn => {
+            btn.classList.toggle('active', btn.dataset.mode === mode);
+        });
+
+        // Update content panels
+        document.getElementById('absoluteMode').classList.toggle('active', mode === 'absolute');
+        document.getElementById('presetMode').classList.toggle('active', mode === 'preset');
+
+        updateButtons();
+        updateStepStates();
+    }
+
+    // ===== WAYPOINT LIST RENDERING =====
+    function renderWaypointList() {
+        const container = document.getElementById('waypointList');
+        container.innerHTML = '';
+        const cfg = state.ptzConfig;
+        const count = state.keyframes.length;
+
+        state.keyframes.forEach((kf, idx) => {
+            const row = document.createElement('div');
+            row.className = 'waypoint-row' + (kf.id === state.selectedKeyframeId ? ' selected' : '');
+            row.addEventListener('click', (e) => {
+                if (e.target.tagName !== 'INPUT' && e.target.tagName !== 'BUTTON' && !e.target.closest('button')) {
+                    selectKeyframe(kf.id);
+                }
+            });
+
+            const isFirst = idx === 0;
+            const isLast = idx === count - 1;
+            const badgeClass = isFirst ? 'start' : (isLast ? 'end' : 'mid');
+            const badgeText = isFirst ? 'Start' : (isLast ? 'End' : `#${idx + 1}`);
+
+            row.innerHTML = `
+                <div class="waypoint-badge ${badgeClass}">${badgeText}</div>
+                <div class="waypoint-fields">
+                    <div class="waypoint-field">
+                        <label>Pan</label>
+                        <input type="number" value="${Math.round(kf.pan)}"
+                            min="${cfg.panMin}" max="${cfg.panMax}"
+                            data-id="${kf.id}" data-field="pan">
+                    </div>
+                    <div class="waypoint-field">
+                        <label>Tilt</label>
+                        <input type="number" value="${Math.round(kf.tilt)}"
+                            min="${cfg.tiltMin}" max="${cfg.tiltMax}"
+                            data-id="${kf.id}" data-field="tilt">
+                    </div>
+                    <div class="waypoint-field">
+                        <label>Zoom</label>
+                        <input type="number" value="${Math.round(kf.zoom)}"
+                            min="${cfg.zoomMin}" max="${cfg.zoomMax}"
+                            data-id="${kf.id}" data-field="zoom">
+                    </div>
+                </div>
+                <div class="waypoint-actions">
+                    <button class="btn btn-ghost btn-icon" title="Move up" data-move-up="${kf.id}" ${isFirst ? 'disabled' : ''}>
+                        <i class="fas fa-chevron-up"></i>
+                    </button>
+                    <button class="btn btn-ghost btn-icon" title="Move down" data-move-down="${kf.id}" ${isLast ? 'disabled' : ''}>
+                        <i class="fas fa-chevron-down"></i>
+                    </button>
+                    <button class="btn btn-ghost btn-icon" title="Go to position" data-goto="${kf.id}">
+                        <i class="fas fa-crosshairs"></i>
+                    </button>
+                    <button class="btn btn-ghost btn-icon" title="Remove" data-remove="${kf.id}" ${count <= 2 ? 'disabled' : ''}>
+                        <i class="fas fa-trash"></i>
+                    </button>
+                </div>
+            `;
+            container.appendChild(row);
+        });
+
+        // Attach events
+        container.querySelectorAll('input[data-field]').forEach(input => {
+            const handler = () => {
+                updateKeyframe(parseInt(input.dataset.id), input.dataset.field, parseFloat(input.value));
+            };
+            input.addEventListener('input', handler);
+            input.addEventListener('change', handler);
+        });
+        container.querySelectorAll('[data-goto]').forEach(btn => {
+            btn.addEventListener('click', () => testKeyframePosition(parseInt(btn.dataset.goto)));
+        });
+        container.querySelectorAll('[data-remove]').forEach(btn => {
+            btn.addEventListener('click', () => removeKeyframe(parseInt(btn.dataset.remove)));
+        });
+        container.querySelectorAll('[data-move-up]').forEach(btn => {
+            btn.addEventListener('click', () => moveKeyframe(parseInt(btn.dataset.moveUp), -1));
+        });
+        container.querySelectorAll('[data-move-down]').forEach(btn => {
+            btn.addEventListener('click', () => moveKeyframe(parseInt(btn.dataset.moveDown), 1));
+        });
+    }
+
+    // ===== MOTION PATH CANVAS =====
+    function drawMotionPath() {
+        const canvas = document.getElementById('motionPathCanvas');
+        const ctx = canvas.getContext('2d');
+        const rect = canvas.getBoundingClientRect();
+        canvas.width = rect.width * (window.devicePixelRatio || 1);
+        canvas.height = rect.height * (window.devicePixelRatio || 1);
+        ctx.scale(window.devicePixelRatio || 1, window.devicePixelRatio || 1);
+        const W = rect.width;
+        const H = rect.height;
+        const cfg = state.ptzConfig;
+        const kfs = state.keyframes;
+        const pad = 40;
+
+        // Background
+        ctx.fillStyle = '#0f1419';
+        ctx.fillRect(0, 0, W, H);
+
+        // Grid
+        ctx.strokeStyle = '#1a1f26';
+        ctx.lineWidth = 1;
+        for (let i = 0; i <= 10; i++) {
+            const x = pad + ((W - 2 * pad) / 10) * i;
+            const y = pad + ((H - 2 * pad) / 10) * i;
+            ctx.beginPath(); ctx.moveTo(x, pad); ctx.lineTo(x, H - pad); ctx.stroke();
+            ctx.beginPath(); ctx.moveTo(pad, y); ctx.lineTo(W - pad, y); ctx.stroke();
+        }
+
+        // Axis labels
+        ctx.fillStyle = '#6b737d';
+        ctx.font = '11px Inter, sans-serif';
+        ctx.textAlign = 'center';
+        ctx.fillText('Pan →', W / 2, H - 8);
+        ctx.save();
+        ctx.translate(14, H / 2);
+        ctx.rotate(-Math.PI / 2);
+        ctx.fillText('Tilt →', 0, 0);
+        ctx.restore();
+
+        // Range labels
+        ctx.fillStyle = '#6b737d';
+        ctx.font = '10px Inter, sans-serif';
+        ctx.textAlign = 'left';
+        ctx.fillText(`${cfg.panMin}°`, pad, H - pad + 18);
+        ctx.textAlign = 'right';
+        ctx.fillText(`${cfg.panMax}°`, W - pad, H - pad + 18);
+        ctx.textAlign = 'right';
+        ctx.fillText(`${cfg.tiltMax}°`, pad - 6, pad + 4);
+        ctx.fillText(`${cfg.tiltMin}°`, pad - 6, H - pad + 4);
+
+        function mapPan(pan) { return pad + ((pan - cfg.panMin) / (cfg.panMax - cfg.panMin || 1)) * (W - 2 * pad); }
+        function mapTilt(tilt) { return (H - pad) - ((tilt - cfg.tiltMin) / (cfg.tiltMax - cfg.tiltMin || 1)) * (H - 2 * pad); }
+        function mapZoom(zoom) { return 4 + ((zoom - cfg.zoomMin) / (cfg.zoomMax - cfg.zoomMin || 1)) * 12; }
+
+        if (kfs.length < 2) {
+            ctx.fillStyle = '#6b737d';
+            ctx.textAlign = 'center';
+            ctx.font = '14px Inter, sans-serif';
+            ctx.fillText('Select a motion preset or add waypoints', W / 2, H / 2);
+            return;
+        }
+
+        // Draw path
+        ctx.strokeStyle = '#58a6ff';
+        ctx.lineWidth = 3;
+        ctx.lineCap = 'round';
+        ctx.lineJoin = 'round';
+        ctx.beginPath();
+        for (let i = 0; i <= 100; i++) {
+            const t = i / 100;
+            const ptz = interpolatePtz(t, kfs);
+            const x = mapPan(ptz.pan);
+            const y = mapTilt(ptz.tilt);
+            if (i === 0) ctx.moveTo(x, y); else ctx.lineTo(x, y);
+        }
+        ctx.stroke();
+
+        // Direction arrows
+        ctx.fillStyle = '#58a6ff';
+        for (let i = 1; i <= 5; i++) {
+            const t = i / 6;
+            const ptz = interpolatePtz(t, kfs);
+            const ptzPrev = interpolatePtz(t - 0.02, kfs);
+            const x = mapPan(ptz.pan);
+            const y = mapTilt(ptz.tilt);
+            const dx = mapPan(ptz.pan) - mapPan(ptzPrev.pan);
+            const dy = mapTilt(ptz.tilt) - mapTilt(ptzPrev.tilt);
+            const angle = Math.atan2(dy, dx);
+
+            ctx.save();
+            ctx.translate(x, y);
+            ctx.rotate(angle);
+            ctx.beginPath();
+            ctx.moveTo(8, 0);
+            ctx.lineTo(-4, -4);
+            ctx.lineTo(-4, 4);
+            ctx.closePath();
+            ctx.fill();
+            ctx.restore();
+        }
+
+        // Draw keyframe markers
+        kfs.forEach((kf, idx) => {
+            const x = mapPan(kf.pan);
+            const y = mapTilt(kf.tilt);
+            const r = mapZoom(kf.zoom);
+            const isSelected = kf.id === state.selectedKeyframeId;
+            const isFirst = idx === 0;
+            const isLast = idx === kfs.length - 1;
+
+            // Zoom circle
+            ctx.beginPath();
+            ctx.arc(x, y, r + 4, 0, Math.PI * 2);
+            ctx.fillStyle = isSelected ? 'rgba(88, 166, 255, 0.2)' : 'rgba(88, 166, 255, 0.1)';
+            ctx.fill();
+
+            // Main dot
+            ctx.beginPath();
+            ctx.arc(x, y, 8, 0, Math.PI * 2);
+            ctx.fillStyle = isFirst ? '#3fb950' : (isLast ? '#f0883e' : '#a371f7');
+            if (isSelected) {
+                ctx.strokeStyle = '#fff';
+                ctx.lineWidth = 3;
+                ctx.stroke();
+            }
+            ctx.fill();
+
+            // Label
+            ctx.fillStyle = '#fff';
+            ctx.font = 'bold 10px Inter, sans-serif';
+            ctx.textAlign = 'center';
+            const label = isFirst ? 'S' : (isLast ? 'E' : (idx + 1));
+            ctx.fillText(label, x, y + 3);
+        });
+
+        // Current capture position
+        if (state.capture.running && state.capture.totalFrames > 0) {
+            const t = state.capture.currentFrameIndex / Math.max(1, state.capture.totalFrames - 1);
+            const ptz = interpolatePtz(Math.min(t, 1), kfs);
+            const x = mapPan(ptz.pan);
+            const y = mapTilt(ptz.tilt);
+
+            ctx.beginPath();
+            ctx.arc(x, y, 10, 0, Math.PI * 2);
+            ctx.fillStyle = '#f85149';
+            ctx.fill();
+            ctx.strokeStyle = '#fff';
+            ctx.lineWidth = 2;
+            ctx.stroke();
+        }
+
+        // Preview position
+        if (state.preview.running && state.preview.currentT !== undefined) {
+            const ptz = interpolatePtz(state.preview.currentT, kfs);
+            const x = mapPan(ptz.pan);
+            const y = mapTilt(ptz.tilt);
+
+            ctx.beginPath();
+            ctx.arc(x, y, 10, 0, Math.PI * 2);
+            ctx.fillStyle = '#f0883e';
+            ctx.fill();
+            ctx.strokeStyle = '#fff';
+            ctx.lineWidth = 2;
+            ctx.stroke();
+        }
+    }
+
+    // ===== CANVAS INTERACTION =====
+    const motionPathCanvas = document.getElementById('motionPathCanvas');
+
+    function getMotionPathCoords(e) {
+        const rect = motionPathCanvas.getBoundingClientRect();
+        const cfg = state.ptzConfig;
+        const pad = 40;
+        const W = rect.width;
+        const H = rect.height;
+        const mx = e.clientX - rect.left;
+        const my = e.clientY - rect.top;
+
+        return {
+            pan: clamp(cfg.panMin + ((mx - pad) / (W - 2 * pad)) * (cfg.panMax - cfg.panMin), cfg.panMin, cfg.panMax),
+            tilt: clamp(cfg.tiltMax - ((my - pad) / (H - 2 * pad)) * (cfg.tiltMax - cfg.tiltMin), cfg.tiltMin, cfg.tiltMax),
+        };
+    }
+
+    function findKeyframeAtMotionPath(e) {
+        const rect = motionPathCanvas.getBoundingClientRect();
+        const cfg = state.ptzConfig;
+        const pad = 40;
+        const W = rect.width;
+        const H = rect.height;
+        const mx = e.clientX - rect.left;
+        const my = e.clientY - rect.top;
+
+        function mapPan(pan) { return pad + ((pan - cfg.panMin) / (cfg.panMax - cfg.panMin || 1)) * (W - 2 * pad); }
+        function mapTilt(tilt) { return (H - pad) - ((tilt - cfg.tiltMin) / (cfg.tiltMax - cfg.tiltMin || 1)) * (H - 2 * pad); }
+
+        let closest = null;
+        let closestDist = Infinity;
+        for (const kf of state.keyframes) {
+            const dist = Math.sqrt((mx - mapPan(kf.pan)) ** 2 + (my - mapTilt(kf.tilt)) ** 2);
+            if (dist < closestDist && dist < 25) {
+                closest = kf;
+                closestDist = dist;
+            }
+        }
+        return closest;
+    }
+
+    motionPathCanvas.addEventListener('mousedown', (e) => {
+        if (state.capture.running) return;
+        const kf = findKeyframeAtMotionPath(e);
+        if (kf) {
+            selectKeyframe(kf.id);
+            state.dragging = { type: 'motionPath', keyframeId: kf.id };
+            e.preventDefault();
+        }
+    });
+
+    document.addEventListener('mousemove', (e) => {
+        if (!state.dragging || state.dragging.type !== 'motionPath') return;
+        const coords = getMotionPathCoords(e);
+        const kf = state.keyframes.find(k => k.id === state.dragging.keyframeId);
+        if (!kf) return;
+        kf.pan = coords.pan;
+        kf.tilt = coords.tilt;
+        onKeyframesChanged();
+    });
+
+    document.addEventListener('mouseup', () => {
+        state.dragging = null;
+    });
+
+    // Preview canvas click
+    document.getElementById('previewCanvas').addEventListener('click', (e) => {
+        if (!state.selectedKeyframeId) return;
+        const canvas = e.target;
+        const rect = canvas.getBoundingClientRect();
+        const cfg = state.ptzConfig;
+
+        const xRatio = (e.clientX - rect.left) / rect.width;
+        const yRatio = (e.clientY - rect.top) / rect.height;
+
+        const pan = cfg.panMin + xRatio * (cfg.panMax - cfg.panMin);
+        const tilt = cfg.tiltMax - yRatio * (cfg.tiltMax - cfg.tiltMin);
+
+        const kf = state.keyframes.find(k => k.id === state.selectedKeyframeId);
+        if (kf) {
+            kf.pan = clamp(Math.round(pan), cfg.panMin, cfg.panMax);
+            kf.tilt = clamp(Math.round(tilt), cfg.tiltMin, cfg.tiltMax);
+            onKeyframesChanged();
+        }
+    });
+
+    // ===== CAPTURE FUNCTIONS =====
+    function captureFrameAsync(ipAddress, previewCanvas) {
+        return new Promise((resolve) => {
+            const fullResCanvas = document.createElement('canvas');
+            fullResCanvas.width = 1280;
+            fullResCanvas.height = 720;
+            const fullResCtx = fullResCanvas.getContext('2d', { willReadFrequently: true });
+            const previewCtx = previewCanvas.getContext('2d', { willReadFrequently: true });
+
+            const img = new Image();
+            img.crossOrigin = 'anonymous';
+            img.onload = () => {
+                fullResCtx.clearRect(0, 0, fullResCanvas.width, fullResCanvas.height);
+                fullResCtx.drawImage(img, 0, 0, fullResCanvas.width, fullResCanvas.height);
+                state.capture.capturedFrames.push(fullResCanvas.toDataURL('image/png'));
+
+                previewCtx.clearRect(0, 0, previewCanvas.width, previewCanvas.height);
+                previewCtx.drawImage(img, 0, 0, previewCanvas.width, previewCanvas.height);
+
+                state.capture.animatedImages.push(img);
+                resolve();
+            };
+            img.onerror = () => {
+                console.warn('Failed to capture frame');
+                resolve();
+            };
+            img.src = `http://${ipAddress}/snapshot.jpg?_t=${Date.now()}`;
+        });
+    }
+
+    function refreshPreview(ipAddress) {
+        return new Promise((resolve, reject) => {
+            const canvas = document.getElementById('previewCanvas');
+            const ctx = canvas.getContext('2d', { willReadFrequently: true });
+            const img = new Image();
+            img.crossOrigin = 'anonymous';
+            img.onload = () => {
+                ctx.clearRect(0, 0, canvas.width, canvas.height);
+                ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+                resolve();
+            };
+            img.onerror = () => reject(new Error('Failed to load preview'));
+            img.src = `http://${ipAddress}/snapshot.jpg?_t=${Date.now()}`;
+        });
+    }
+
+    async function testSnapshot(ipAddress) {
+        const previewCanvas = document.getElementById('previewCanvas');
+        const ctx = previewCanvas.getContext('2d', { willReadFrequently: true });
+
+        return new Promise((resolve, reject) => {
+            const img = new Image();
+            img.crossOrigin = 'anonymous';
+            img.onload = () => {
+                ctx.clearRect(0, 0, previewCanvas.width, previewCanvas.height);
+                ctx.drawImage(img, 0, 0, previewCanvas.width, previewCanvas.height);
+
+                // Calculate image data size
+                const dataUrl = previewCanvas.toDataURL('image/png');
+                const sizeKB = Math.round((dataUrl.length * 3) / 4 / 1024);
+
+                showToast(`Test snapshot OK! Image size: ~${sizeKB}KB`, 'success');
+                updateConnectionStatus('connected', 'Connected');
+                resolve();
+            };
+            img.onerror = () => {
+                updateConnectionStatus('error', 'Snapshot failed');
+                reject(new Error('Failed to capture snapshot'));
+            };
+            img.src = `http://${ipAddress}/snapshot.jpg?_t=${Date.now()}`;
+        });
+    }
+
+    function startAnimationLoop(videoCanvas) {
+        if (state.animationLoopStarted) return;
+        state.animationLoopStarted = true;
+        const ctx = videoCanvas.getContext('2d', { willReadFrequently: true });
+        let animIndex = 0;
+        setInterval(() => {
+            const images = state.capture.animatedImages;
+            if (images.length > 0) {
+                const img = images[animIndex % images.length];
+                ctx.clearRect(0, 0, videoCanvas.width, videoCanvas.height);
+                ctx.drawImage(img, 0, 0, videoCanvas.width, videoCanvas.height);
+                animIndex = (animIndex + 1) % images.length;
+            }
+        }, 100);
+    }
+
+    // ===== MAIN CAPTURE LOOP =====
+    async function startMotionCapture() {
+        if (state.motionMode === 'absolute') {
+            await startAbsoluteCapture();
+        } else {
+            await startPresetCapture();
+        }
+    }
+
+    async function startAbsoluteCapture() {
+        const ipAddress = document.getElementById('ipAddress').value;
+        const intervalMs = parseFloat(document.getElementById('interval').value) * 1000;
+        const durationMin = parseFloat(document.getElementById('duration').value) || 0;
+        const initialMoveTimeMs = state.ptzConfig.initialMoveTimeMs;
+        const settleTimeMs = state.ptzConfig.settleTimeMs;
+        const previewCanvas = document.getElementById('previewCanvas');
+        const videoCanvas = document.getElementById('videoPreviewCanvas');
+        const kfs = state.keyframes;
+
+        if (durationMin <= 0 || kfs.length < 2) return;
+
+        const totalFrames = Math.ceil((durationMin * 60 * 1000) / intervalMs);
+        state.capture.running = true;
+        state.capture.capturedFrames = [];
+        state.capture.animatedImages = [];
+        state.capture.currentFrameIndex = 0;
+        state.capture.totalFrames = totalFrames;
+        state.capture.gifBlob = null;
+
+        startAnimationLoop(videoCanvas);
+        updateCaptureUI();
+        updateSetupStatus(true);
+        showToast('Capture started!', 'info');
+
+        let frameIndex = 0;
+
+        while (state.capture.running && frameIndex < totalFrames) {
+            const t = totalFrames <= 1 ? 0 : frameIndex / (totalFrames - 1);
+            const ptz = interpolatePtz(t, kfs);
+
+            await sendPtzCommand(ipAddress, ptz.pan, ptz.tilt, ptz.zoom);
+
+            // Use initial move time for first frame, settle time for rest
+            const waitTime = frameIndex === 0 ? initialMoveTimeMs : settleTimeMs;
+            await sleep(waitTime);
+
+            if (!state.capture.running) break;
+
+            await captureFrameAsync(ipAddress, previewCanvas);
+
+            frameIndex++;
+            state.capture.currentFrameIndex = frameIndex;
+            updateCaptureStatus(frameIndex, totalFrames);
+            drawMotionPath();
+
+            const remaining = Math.max(0, intervalMs - waitTime);
+            if (remaining > 0 && state.capture.running && frameIndex < totalFrames) {
+                await sleep(remaining);
+            }
+        }
+
+        if (state.capture.running) {
+            stopMotionCapture();
+        }
+    }
+
+    async function startPresetCapture() {
+        const ipAddress = document.getElementById('ipAddress').value;
+        const intervalMs = parseFloat(document.getElementById('interval').value) * 1000;
+        const durationMin = parseFloat(document.getElementById('duration').value) || 0;
+        const initialMoveTimeMs = state.ptzConfig.initialMoveTimeMs;
+        const settleTimeMs = state.ptzConfig.settleTimeMs;
+        const previewCanvas = document.getElementById('previewCanvas');
+        const videoCanvas = document.getElementById('videoPreviewCanvas');
+        const presets = state.cameraPresets;
+
+        if (durationMin <= 0 || presets.length < 2) return;
+
+        const totalFrames = Math.ceil((durationMin * 60 * 1000) / intervalMs);
+        state.capture.running = true;
+        state.capture.capturedFrames = [];
+        state.capture.animatedImages = [];
+        state.capture.currentFrameIndex = 0;
+        state.capture.totalFrames = totalFrames;
+        state.capture.gifBlob = null;
+
+        startAnimationLoop(videoCanvas);
+        updateCaptureUI();
+        updateSetupStatus(true);
+        showToast('Capture started (Preset mode)!', 'info');
+
+        let frameIndex = 0;
+
+        while (state.capture.running && frameIndex < totalFrames) {
+            // Calculate which preset to use based on progress
+            const t = totalFrames <= 1 ? 0 : frameIndex / (totalFrames - 1);
+            const presetIndex = getPresetIndexForT(t, presets.length);
+            const preset = presets[presetIndex];
+
+            await sendPresetCommand(ipAddress, preset.number);
+
+            // Use initial move time for first frame, settle time for rest
+            const waitTime = frameIndex === 0 ? initialMoveTimeMs : settleTimeMs;
+            await sleep(waitTime);
+
+            if (!state.capture.running) break;
+
+            await captureFrameAsync(ipAddress, previewCanvas);
+
+            frameIndex++;
+            state.capture.currentFrameIndex = frameIndex;
+            updateCaptureStatus(frameIndex, totalFrames);
+
+            const remaining = Math.max(0, intervalMs - waitTime);
+            if (remaining > 0 && state.capture.running && frameIndex < totalFrames) {
+                await sleep(remaining);
+            }
+        }
+
+        if (state.capture.running) {
+            stopMotionCapture();
+        }
+    }
+
+    // Calculate which preset to use for a given t value (0 to 1)
+    function getPresetIndexForT(t, presetCount) {
+        if (presetCount <= 1) return 0;
+        const segments = presetCount - 1;
+        const scaled = t * segments;
+        return Math.min(Math.round(scaled), presetCount - 1);
+    }
+
+    function stopMotionCapture() {
+        state.capture.running = false;
+        updateCaptureUI();
+        updateSetupStatus(false);
+
+        if (state.capture.capturedFrames.length > 0) {
+            const format = document.getElementById('outputFormat').value;
+            if (format === 'webm') {
+                generateWebM();
+                showToast('Capture complete! Generating WebM...', 'success');
+            } else {
+                generateGif();
+                showToast('Capture complete! Generating GIF...', 'success');
+            }
+        }
+    }
+
+    function updateSetupStatus(isRunning) {
+        const dot = document.getElementById('captureStatusDot');
+        const text = document.getElementById('captureStatusText');
+
+        if (isRunning) {
+            dot.classList.add('running');
+            text.textContent = 'Recording';
+        } else {
+            dot.classList.remove('running');
+            text.textContent = 'Idle';
+        }
+    }
+
+    function downloadGif() {
+        if (state.capture.gifBlob) {
+            const link = document.createElement('a');
+            link.href = state.capture.gifBlob;
+            const format = document.getElementById('outputFormat').value;
+            link.download = format === 'webm' ? 'motionlapse.webm' : 'motionlapse.gif';
+            link.click();
+        }
+    }
+
+    function updateGifPreviewHint() {
+        const hint = document.getElementById('gifPreviewHint');
+        const canvas = document.getElementById('videoPreviewCanvas');
+
+        // Always show the hint text, but only enable click when GIF is ready
+        if (state.capture.gifBlob) {
+            hint.classList.add('gif-download-hint');
+            canvas.classList.add('clickable');
+        } else {
+            hint.classList.remove('gif-download-hint');
+            canvas.classList.remove('clickable');
+        }
+    }
+
+    function generateGif() {
+        const progressContainer = document.getElementById('progressContainer');
+        const progressFill = document.getElementById('progressFill');
+        const progressPercent = document.getElementById('progressPercent');
+        const gifSpeedMs = parseInt(document.getElementById('gifSpeed').value) || 100;
+        // gifshot uses frameDuration in 10ths of a second
+        const frameDuration = Math.round(gifSpeedMs / 10);
+
+        progressContainer.classList.add('visible');
+        progressFill.style.width = '0%';
+        progressPercent.textContent = '0%';
+        document.getElementById('progressLabel').textContent = 'Generating GIF...';
+
+        gifshot.createGIF({
+            images: state.capture.capturedFrames,
+            gifWidth: 1280,
+            gifHeight: 720,
+            frameDuration: frameDuration,
+            progressCallback: function(p) {
+                const pct = Math.round(p * 100);
+                progressFill.style.width = pct + '%';
+                progressPercent.textContent = pct + '%';
+            }
+        }, function(obj) {
+            if (!obj.error) {
+                state.capture.gifBlob = obj.image;
+                updateGifPreviewHint();
+                notifyComplete('GIF');
+            } else {
+                console.error('GIF creation failed:', obj.error);
+                showToast('Failed to create GIF', 'error');
+            }
+            progressContainer.classList.remove('visible');
+        });
+    }
+
+    async function generateWebM() {
+        const progressContainer = document.getElementById('progressContainer');
+        const progressFill = document.getElementById('progressFill');
+        const progressPercent = document.getElementById('progressPercent');
+        const gifSpeedMs = parseInt(document.getElementById('gifSpeed').value) || 100;
+
+        progressContainer.classList.add('visible');
+        progressFill.style.width = '0%';
+        progressPercent.textContent = '0%';
+        document.getElementById('progressLabel').textContent = 'Generating WebM...';
+
+        try {
+            // Create a canvas for rendering frames
+            const canvas = document.createElement('canvas');
+            canvas.width = 1280;
+            canvas.height = 720;
+            const ctx = canvas.getContext('2d');
+
+            // Create MediaRecorder
+            const stream = canvas.captureStream(0);
+            const recorder = new MediaRecorder(stream, {
+                mimeType: 'video/webm;codecs=vp9',
+                videoBitsPerSecond: 5000000
+            });
+
+            const chunks = [];
+            recorder.ondataavailable = (e) => chunks.push(e.data);
+
+            recorder.onstop = () => {
+                const blob = new Blob(chunks, { type: 'video/webm' });
+                state.capture.gifBlob = URL.createObjectURL(blob);
+                updateGifPreviewHint();
+                notifyComplete('WebM');
+                progressContainer.classList.remove('visible');
+            };
+
+            recorder.start();
+
+            // Render each frame
+            const frames = state.capture.capturedFrames;
+            for (let i = 0; i < frames.length; i++) {
+                const img = new Image();
+                img.src = frames[i];
+                await new Promise(resolve => {
+                    img.onload = () => {
+                        ctx.drawImage(img, 0, 0, 1280, 720);
+                        stream.getVideoTracks()[0].requestFrame();
+                        resolve();
+                    };
+                });
+                await sleep(gifSpeedMs);
+
+                const pct = Math.round(((i + 1) / frames.length) * 100);
+                progressFill.style.width = pct + '%';
+                progressPercent.textContent = pct + '%';
+            }
+
+            recorder.stop();
+        } catch (e) {
+            console.error('WebM creation failed:', e);
+            showToast('Failed to create WebM. Falling back to GIF.', 'error');
+            progressContainer.classList.remove('visible');
+            generateGif();
+        }
+    }
+
+    function notifyComplete(format) {
+        showToast(`${format} ready! Click preview to download.`, 'success');
+
+        const shouldNotify = document.getElementById('notifyOnComplete').checked;
+        if (!shouldNotify) return;
+
+        // Play notification sound
+        try {
+            const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+            const oscillator = audioCtx.createOscillator();
+            const gainNode = audioCtx.createGain();
+
+            oscillator.connect(gainNode);
+            gainNode.connect(audioCtx.destination);
+
+            oscillator.frequency.value = 800;
+            oscillator.type = 'sine';
+            gainNode.gain.value = 0.3;
+
+            oscillator.start();
+            oscillator.stop(audioCtx.currentTime + 0.15);
+
+            setTimeout(() => {
+                const osc2 = audioCtx.createOscillator();
+                osc2.connect(gainNode);
+                osc2.frequency.value = 1000;
+                osc2.type = 'sine';
+                osc2.start();
+                osc2.stop(audioCtx.currentTime + 0.15);
+            }, 150);
+        } catch (e) {
+            // Audio not supported
+        }
+
+        // Browser notification
+        if ('Notification' in window && Notification.permission === 'granted') {
+            new Notification('MotionLapse', {
+                body: `Your ${format} is ready for download!`,
+                icon: 'data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><text y=".9em" font-size="90">🎬</text></svg>'
+            });
+        } else if ('Notification' in window && Notification.permission !== 'denied') {
+            Notification.requestPermission();
+        }
+    }
+
+    // ===== PATH PREVIEW =====
+    async function previewMotionPath() {
+        if (state.motionMode === 'absolute') {
+            await previewAbsolutePath();
+        } else {
+            await previewPresetPath();
+        }
+    }
+
+    async function previewAbsolutePath() {
+        const ipAddress = document.getElementById('ipAddress').value;
+        if (!ipAddress || state.keyframes.length < 2) return;
+
+        state.preview.running = true;
+        state.preview.currentT = 0;
+        document.getElementById('previewPathBtn').style.display = 'none';
+        document.getElementById('cancelPreviewBtn').style.display = '';
+        updateButtons();
+        showToast('Previewing motion path...', 'info');
+
+        const steps = 20;
+        const settleTimeMs = state.ptzConfig.settleTimeMs;
+
+        for (let i = 0; i <= steps; i++) {
+            if (!state.preview.running) break;
+
+            const t = i / steps;
+            state.preview.currentT = t;
+            const ptz = interpolatePtz(t, state.keyframes);
+
+            await sendPtzCommand(ipAddress, ptz.pan, ptz.tilt, ptz.zoom);
+            await sleep(settleTimeMs);
+
+            if (!state.preview.running) break;
+
+            await refreshPreview(ipAddress);
+            drawMotionPath();
+        }
+
+        state.preview.running = false;
+        state.preview.currentT = undefined;
+        document.getElementById('previewPathBtn').style.display = '';
+        document.getElementById('cancelPreviewBtn').style.display = 'none';
+        updateButtons();
+        drawMotionPath();
+        showToast('Preview complete', 'success');
+    }
+
+    async function previewPresetPath() {
+        const ipAddress = document.getElementById('ipAddress').value;
+        if (!ipAddress || state.cameraPresets.length < 2) return;
+
+        state.preview.running = true;
+        document.getElementById('previewPathBtn').style.display = 'none';
+        document.getElementById('cancelPreviewBtn').style.display = '';
+        updateButtons();
+        showToast('Previewing preset path...', 'info');
+
+        const settleTimeMs = state.ptzConfig.settleTimeMs;
+
+        for (let i = 0; i < state.cameraPresets.length; i++) {
+            if (!state.preview.running) break;
+
+            const preset = state.cameraPresets[i];
+            selectCameraPreset(preset.id);
+
+            await sendPresetCommand(ipAddress, preset.number);
+            await sleep(settleTimeMs);
+
+            if (!state.preview.running) break;
+
+            await refreshPreview(ipAddress);
+        }
+
+        state.preview.running = false;
+        document.getElementById('previewPathBtn').style.display = '';
+        document.getElementById('cancelPreviewBtn').style.display = 'none';
+        updateButtons();
+        showToast('Preview complete', 'success');
+    }
+
+    async function testKeyframePosition(id) {
+        const ipAddress = document.getElementById('ipAddress').value;
+        if (!ipAddress) {
+            showToast('Enter camera IP first', 'error');
+            return;
+        }
+
+        const kf = state.keyframes.find(k => k.id === id);
+        if (!kf) return;
+
+        selectKeyframe(id);
+        showToast('Moving to position...', 'info');
+        await sendPtzCommand(ipAddress, kf.pan, kf.tilt, kf.zoom);
+        await sleep(state.ptzConfig.settleTimeMs);
+        await refreshPreview(ipAddress);
+    }
+
+    // ===== UI HELPERS =====
+    function updateButtons() {
+        const ip = document.getElementById('ipAddress').value;
+        const interval = document.getElementById('interval').value;
+        const duration = document.getElementById('duration').value;
+        const validIP = ip.match(/\b(?:[0-9]{1,3}\.){3}[0-9]{1,3}\b/) || ip.includes('@');
+
+        // Check based on current mode
+        const hasEnoughPath = state.motionMode === 'absolute'
+            ? state.keyframes.length >= 2
+            : state.cameraPresets.length >= 2;
+
+        const isCapturing = state.capture.running;
+        const isPreviewing = state.preview.running;
+
+        const canStart = ip && interval && duration && validIP && hasEnoughPath && !isCapturing && !isPreviewing;
+        document.getElementById('startBtn').disabled = !canStart;
+        document.getElementById('stopBtn').disabled = !isCapturing;
+        document.getElementById('previewPathBtn').disabled = !ip || !validIP || !hasEnoughPath || isCapturing || isPreviewing;
+        document.getElementById('addWaypointBtn').disabled = isCapturing;
+        document.getElementById('addPresetBtn').disabled = isCapturing;
+        document.getElementById('refreshPreviewBtn').disabled = !ip || !validIP;
+    }
+
+    function updateCaptureUI() {
+        const isCapturing = state.capture.running;
+        document.getElementById('startBtn').disabled = isCapturing;
+        document.getElementById('stopBtn').disabled = !isCapturing;
+
+        document.querySelectorAll('.waypoint-row input, .waypoint-row button').forEach(el => {
+            el.disabled = isCapturing;
+        });
+        document.querySelectorAll('.preset-card input, .preset-card button').forEach(el => {
+            el.disabled = isCapturing;
+        });
+        document.getElementById('addWaypointBtn').disabled = isCapturing;
+        document.getElementById('addPresetBtn').disabled = isCapturing;
+
+        if (!isCapturing) {
+            updateButtons();
+            document.getElementById('captureStatus').textContent = 'Ready';
+            document.getElementById('captureMeta').textContent = 'Configure settings to begin';
+        }
+    }
+
+    function updateCaptureStatus(current, total) {
+        document.getElementById('captureStatus').textContent = `Frame ${current} / ${total}`;
+        const remaining = total - current;
+        const intervalSec = parseFloat(document.getElementById('interval').value) || 10;
+        const remainingMin = Math.ceil((remaining * intervalSec) / 60);
+        document.getElementById('captureMeta').textContent = `~${remainingMin} min remaining`;
+    }
+
+    function loadPtzConfigFromUI() {
+        state.ptzConfig.initialMoveTimeMs = parseInt(document.getElementById('initialMoveTime').value) || 5000;
+        state.ptzConfig.settleTimeMs = parseInt(document.getElementById('settleTime').value) || 3000;
+        state.ptzConfig.panSpeed = parseInt(document.getElementById('panSpeed').value) || 12;
+        state.ptzConfig.tiltSpeed = parseInt(document.getElementById('tiltSpeed').value) || 10;
+        state.ptzConfig.zoomSpeed = parseInt(document.getElementById('zoomSpeed').value) || 3;
+    }
+
+    function scheduleStartEnd() {
+        const startTime = new Date(document.getElementById('startTime').value);
+        const endTime = new Date(document.getElementById('endTime').value);
+        const now = new Date();
+
+        if (!isNaN(startTime.getTime()) && startTime > now) {
+            setTimeout(() => {
+                if (!state.capture.running) document.getElementById('startBtn').click();
+            }, startTime - now);
+            showToast(`Scheduled to start at ${startTime.toLocaleTimeString()}`, 'info');
+        }
+
+        if (!isNaN(endTime.getTime()) && endTime > now) {
+            setTimeout(() => {
+                if (state.capture.running) document.getElementById('stopBtn').click();
+            }, endTime - now);
+        }
+    }
+
+    // ===== EVENT LISTENERS =====
+
+    // Setup accordion toggle
+    document.getElementById('setupHeader').addEventListener('click', () => {
+        document.getElementById('setupAccordion').classList.toggle('collapsed');
+    });
+
+    document.getElementById('outputOptionsHeader').addEventListener('click', () => {
+        document.getElementById('outputOptionsAccordion').classList.toggle('collapsed');
+    });
+
+    document.getElementById('testConnectionBtn').addEventListener('click', testConnection);
+
+    document.getElementById('refreshPreviewBtn').addEventListener('click', async () => {
+        const ip = document.getElementById('ipAddress').value;
+        if (ip) {
+            try {
+                await refreshPreview(ip);
+                showToast('Preview refreshed', 'success');
+            } catch (e) {
+                showToast('Failed to refresh preview', 'error');
+            }
+        }
+    });
+
+    // Test snapshot button
+    document.getElementById('testSnapshotBtn').addEventListener('click', async () => {
+        const ip = document.getElementById('ipAddress').value;
+        if (!ip) {
+            showToast('Enter camera IP first', 'error');
+            return;
+        }
+
+        showToast('Taking test snapshot...', 'info');
+        try {
+            await testSnapshot(ip);
+        } catch (e) {
+            showToast('Failed to capture test snapshot', 'error');
+        }
+    });
+
+    // Theme toggle
+    document.getElementById('themeToggle').addEventListener('click', () => {
+        const html = document.documentElement;
+        const currentTheme = html.getAttribute('data-theme') || 'dark';
+        const newTheme = currentTheme === 'dark' ? 'light' : 'dark';
+
+        html.setAttribute('data-theme', newTheme);
+        localStorage.setItem('motionlapse-theme', newTheme);
+
+        // Update icon
+        const icon = document.querySelector('#themeToggle i');
+        icon.className = newTheme === 'dark' ? 'fas fa-sun' : 'fas fa-moon';
+    });
+
+    // Load saved theme
+    const savedTheme = localStorage.getItem('motionlapse-theme') || 'dark';
+    document.documentElement.setAttribute('data-theme', savedTheme);
+    document.querySelector('#themeToggle i').className = savedTheme === 'dark' ? 'fas fa-sun' : 'fas fa-moon';
+
+    // GIF preview canvas click to download
+    document.getElementById('videoPreviewCanvas').addEventListener('click', () => {
+        if (state.capture.gifBlob) {
+            downloadGif();
+        }
+    });
+
+    document.getElementById('advancedToggle').addEventListener('click', () => {
+        const toggle = document.getElementById('advancedToggle');
+        const content = document.getElementById('advancedContent');
+        toggle.classList.toggle('open');
+        content.classList.toggle('open');
+    });
+
+    // Mode toggle
+    document.querySelectorAll('.mode-btn').forEach(btn => {
+        btn.addEventListener('click', () => setMotionMode(btn.dataset.mode));
+    });
+
+    // Motion presets (for absolute mode)
+    document.querySelectorAll('.preset-btn').forEach(btn => {
+        btn.addEventListener('click', () => applyMotionPreset(btn.dataset.preset));
+    });
+
+    ['initialMoveTime', 'settleTime', 'panSpeed', 'tiltSpeed', 'zoomSpeed'].forEach(id => {
+        document.getElementById(id).addEventListener('change', loadPtzConfigFromUI);
+    });
+
+    ['ipAddress', 'interval', 'duration'].forEach(id => {
+        document.getElementById(id).addEventListener('input', updateStepStates);
+    });
+
+    document.getElementById('startTime').addEventListener('change', scheduleStartEnd);
+    document.getElementById('endTime').addEventListener('change', scheduleStartEnd);
+
+    document.getElementById('addWaypointBtn').addEventListener('click', () => {
+        addKeyframe(0, 30, 8192);
+        showToast('Waypoint added', 'success');
+    });
+
+    // Add preset button (for preset mode)
+    document.getElementById('addPresetBtn').addEventListener('click', () => {
+        const input = document.getElementById('newPresetNumber');
+        const presetNum = parseInt(input.value);
+        if (addCameraPreset(presetNum)) {
+            input.value = '';
+            showToast(`Preset ${presetNum} added`, 'success');
+        }
+    });
+
+    // Allow Enter key to add preset
+    document.getElementById('newPresetNumber').addEventListener('keypress', (e) => {
+        if (e.key === 'Enter') {
+            document.getElementById('addPresetBtn').click();
+        }
+    });
+
+    document.getElementById('startBtn').addEventListener('click', () => {
+        if (!state.capture.running) startMotionCapture();
+    });
+
+    document.getElementById('stopBtn').addEventListener('click', () => {
+        if (state.capture.running) stopMotionCapture();
+    });
+
+    document.getElementById('previewPathBtn').addEventListener('click', previewMotionPath);
+
+    document.getElementById('cancelPreviewBtn').addEventListener('click', () => {
+        state.preview.running = false;
+    });
+
+    window.addEventListener('resize', drawMotionPath);
+
+    // ===== INITIALIZATION =====
+    function init() {
+        // Start with pan left-to-right preset for absolute mode
+        addKeyframe(-85, 30, 8192);
+        addKeyframe(85, 30, 8192);
+
+        // Initialize preset cards (empty state)
+        renderPresetCards();
+
+        updateButtons();
+        updateStepStates();
+    }
+
+    init();
+    </script>
+</body>
+</html>

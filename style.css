@@ -82,13 +82,15 @@ body {
 
 .step-track {
     display: flex;
+    width: 300%;
     transition: transform 0.4s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
 .step {
-    min-width: 100%;
+    width: calc(100% / 3);
     flex-shrink: 0;
     padding: 0 10px;
+    box-sizing: border-box;
 }
 
 .step-heading {

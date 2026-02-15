@@ -61,7 +61,7 @@
         this.currentStep = step;
         var track = document.querySelector('.step-track');
         if (track) {
-            track.style.transform = 'translateX(-' + (step * 100) + '%)';
+            track.style.transform = 'translateX(-' + (step * 100 / this.stepCount) + '%)';
         }
         var dots = document.querySelectorAll('.step-dot');
         for (var i = 0; i < dots.length; i++) {

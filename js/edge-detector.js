@@ -193,62 +193,52 @@
         return { found: true, x: gameX, y: refinedY };
     };
 
-    // Global horizontal motion estimation via multi-row SAD voting.
-    // Samples rows across the full frame; each row independently finds its
-    // best horizontal shift. Rows with real texture contribute reliable votes;
-    // uniform rows (horizontal edges, blank walls) are filtered out.
-    // Median of votes gives a robust camera-pan estimate.
+    // Global horizontal motion estimation using a large central block.
+    // Compares the central 70% of the frame between two grayscale images,
+    // subsampling every other row and pixel for performance.
+    // A large block captures whatever texture exists anywhere in view;
+    // uniform regions add zero signal but don't hurt (they contribute
+    // equal SAD at every shift). Returns shift in processing pixels.
     ARGame.estimateGlobalMotionX = function (prevGray, curGray, w, h) {
         if (!prevGray || prevGray.length !== curGray.length) return 0;
 
         var maxShift = 12;
-        var numRows = 12;
         var margin = maxShift + 2;
+        var y0 = Math.round(h * 0.15);
+        var y1 = Math.round(h * 0.85);
 
-        if (w < margin * 2 + 10 || h < numRows) return 0;
+        if (w < margin * 2 + 10 || y1 - y0 < 10) return 0;
 
-        var votes = [];
+        var bestShift = 0;
+        var bestSAD = Infinity;
+        var sadAtZero = 0;
 
-        for (var s = 0; s < numRows; s++) {
-            var y = Math.round((s + 0.5) * h / numRows);
-            if (y < 0 || y >= h) continue;
-
-            var base = y * w;
-            var bestShift = 0;
-            var bestSAD = Infinity;
-            var sadAtZero = 0;
-
-            for (var shift = -maxShift; shift <= maxShift; shift++) {
-                var sad = 0;
-                var x0 = Math.max(margin, -shift);
-                var x1 = Math.min(w - margin, w - shift);
-                for (var x = x0; x < x1; x++) {
+        for (var shift = -maxShift; shift <= maxShift; shift++) {
+            var sad = 0;
+            var x0 = Math.max(margin, -shift);
+            var x1 = Math.min(w - margin, w - shift);
+            for (var y = y0; y < y1; y += 2) {
+                var base = y * w;
+                for (var x = x0; x < x1; x += 2) {
                     var diff = prevGray[base + x] - curGray[base + x + shift];
                     sad += diff < 0 ? -diff : diff;
                 }
-                if (shift === 0) sadAtZero = sad;
-                if (sad < bestSAD) {
-                    bestSAD = sad;
-                    bestShift = shift;
-                }
             }
-
-            // Only count rows with enough horizontal texture for a reliable match.
-            // avgZeroSAD > 3: the row changed between frames (not static/uniform).
-            // bestSAD < sadAtZero * 0.85: the best shift clearly beats no-shift.
-            var pixelCount = w - 2 * margin;
-            var avgZeroSAD = pixelCount > 0 ? sadAtZero / pixelCount : 0;
-
-            if (avgZeroSAD > 3 && bestSAD < sadAtZero * 0.85) {
-                votes.push(bestShift);
+            if (shift === 0) sadAtZero = sad;
+            if (sad < bestSAD) {
+                bestSAD = sad;
+                bestShift = shift;
             }
         }
 
-        if (votes.length < 2) return 0;
+        // Static scene: near-zero SAD at zero-shift means nothing moved
+        var count = ((y1 - y0) >> 1) * ((x1 - x0) >> 1);
+        if (count > 0 && sadAtZero / count < 1.5) return 0;
 
-        votes.sort(function (a, b) { return a - b; });
-        var m = votes.length >> 1;
-        return votes.length & 1 ? votes[m] : (votes[m - 1] + votes[m]) * 0.5;
+        // No clear winner: best shift isn't notably better than no shift
+        if (sadAtZero > 0 && bestSAD > sadAtZero * 0.95) return 0;
+
+        return bestShift;
     };
 
     // Local horizontal motion estimation centered on a target position.

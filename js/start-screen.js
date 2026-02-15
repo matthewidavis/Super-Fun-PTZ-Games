@@ -5,14 +5,14 @@
 
     var MODE_THEMES = {
         cats: [
-            { icon: '&#128062;', sub: '10 boops, make them count' },
-            { icon: '&#128049;', sub: '60s, unlimited boops' },
-            { icon: '&#128572;', sub: 'Boop to earn more' }
+            { title: 'CAT NAP', icon: '&#128062;', sub: '10 boops, make them count' },
+            { title: 'BOOP RUSH', icon: '&#128049;', sub: '60s boop-a-thon!' },
+            { title: '9 LIVES', icon: '&#128572;', sub: 'Boop cats to earn more' }
         ],
         aliens: [
-            { icon: '&#128126;', sub: '10 scans, make them count' },
-            { icon: '&#128760;', sub: '60s, unlimited scans' },
-            { icon: '&#128125;', sub: 'Scan to earn more' }
+            { title: 'FIRST CONTACT', icon: '&#128126;', sub: '10 scans, make them count' },
+            { title: 'INVASION', icon: '&#128760;', sub: '60s scanning frenzy!' },
+            { title: 'LAST STAND', icon: '&#128125;', sub: 'Tag aliens to earn more' }
         ]
     };
 
@@ -213,6 +213,7 @@
         var cards = document.querySelectorAll('.mode-card');
         for (var i = 0; i < cards.length && i < data.length; i++) {
             cards[i].querySelector('.mode-icon').innerHTML = data[i].icon;
+            cards[i].querySelector('.card-title').textContent = data[i].title;
             cards[i].querySelector('.card-sub').innerHTML = data[i].sub;
         }
     };

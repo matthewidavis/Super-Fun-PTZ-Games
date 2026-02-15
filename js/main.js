@@ -298,6 +298,10 @@
 
         processScale = config.PROCESS_SCALE;
         targetWasActive = false;
+        prevGray = null;
+        smoothedDx = 0;
+        lastFrameTime = 0;
+        gameOverHandled = false;
 
         // Transition
         startScreen.hide();

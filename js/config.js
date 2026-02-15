@@ -103,7 +103,7 @@
             this.ammoNoun = 'Boops';
             this.gameOverTitle = 'NAP TIME!';
             this.resultsSummary = 'Boops landed';
-            this.windowTitle = 'Fun PTZ Games \u2014 Boop';
+            this.windowTitle = 'Super Fun PTZ Games \u2014 Boop';
             this.crosshairStyle = 'paw';
             this.colorHudText = 'rgb(255,180,50)';
             this.colorHudAmmoFull = 'rgb(255,160,80)';
@@ -119,7 +119,7 @@
             this.ammoNoun = 'Scans';
             this.gameOverTitle = 'SCAN COMPLETE';
             this.resultsSummary = 'Specimens tagged';
-            this.windowTitle = 'Fun PTZ Games \u2014 Alien Detection';
+            this.windowTitle = 'Super Fun PTZ Games \u2014 Alien Detection';
             this.crosshairStyle = 'radar';
             this.colorHudText = 'rgb(0,255,100)';
             this.colorHudAmmoFull = 'rgb(0,200,80)';

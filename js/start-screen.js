@@ -3,6 +3,19 @@
 
     var MODE_LIST = ['classic', 'timeAttack', 'survival'];
 
+    var MODE_THEMES = {
+        cats: [
+            { icon: '&#128062;', sub: '10 boops, make them count' },
+            { icon: '&#128049;', sub: '60s, unlimited boops' },
+            { icon: '&#128572;', sub: 'Boop to earn more' }
+        ],
+        aliens: [
+            { icon: '&#128126;', sub: '10 scans, make them count' },
+            { icon: '&#128760;', sub: '60s, unlimited scans' },
+            { icon: '&#128125;', sub: 'Scan to earn more' }
+        ]
+    };
+
     function StartScreen() {
         this.selectedTheme = 0; // 0=cats, 1=aliens
         this.selectedMode = 0;  // 0=classic, 1=timeAttack, 2=survival
@@ -17,6 +30,7 @@
 
         this._initParticles();
         this._initCardIcons();
+        this._updateModeCards();
         this._bindEvents();
         this._resizeCanvas();
         this._animateParticles();
@@ -189,7 +203,18 @@
         for (var i = 0; i < cards.length; i++) {
             cards[i].classList.toggle('selected', i === idx);
         }
+        this._updateModeCards();
         this._updateHighScoreDisplay();
+    };
+
+    StartScreen.prototype._updateModeCards = function () {
+        var theme = this.selectedTheme === 0 ? 'cats' : 'aliens';
+        var data = MODE_THEMES[theme];
+        var cards = document.querySelectorAll('.mode-card');
+        for (var i = 0; i < cards.length && i < data.length; i++) {
+            cards[i].querySelector('.mode-icon').innerHTML = data[i].icon;
+            cards[i].querySelector('.card-sub').innerHTML = data[i].sub;
+        }
     };
 
     StartScreen.prototype._selectMode = function (idx) {

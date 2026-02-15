@@ -135,4 +135,3 @@ The whole thing runs at 60fps on most machines. It's surprisingly efficient for 
 ## Credits
 
 - Original concept by [HJWWalters](https://hjwwalters.com/augmented-reality-game-esp32-cam/) — an ESP32-CAM AR game that inspired this whole thing
-- Built with zero frameworks, zero dependencies, zero build steps. Just vibes and vanilla JavaScript.

@@ -468,13 +468,13 @@
                 var rawDx = ARGame.estimateMotion(prevGray, gray, procW, procH);
                 var rawDy = ARGame.estimateMotionY(prevGray, gray, procW, procH);
 
-                // EMA smoothing (responsive blend) + clamp
-                var maxShift = 12;
-                smoothedDx = smoothedDx * 0.4 + rawDx * 0.6;
+                // EMA smoothing (heavy on old value to reject noise) + clamp
+                var maxShift = 10;
+                smoothedDx = smoothedDx * 0.6 + rawDx * 0.4;
                 if (smoothedDx > maxShift) smoothedDx = maxShift;
                 else if (smoothedDx < -maxShift) smoothedDx = -maxShift;
 
-                smoothedDy = smoothedDy * 0.4 + rawDy * 0.6;
+                smoothedDy = smoothedDy * 0.6 + rawDy * 0.4;
                 if (smoothedDy > maxShift) smoothedDy = maxShift;
                 else if (smoothedDy < -maxShift) smoothedDy = -maxShift;
 

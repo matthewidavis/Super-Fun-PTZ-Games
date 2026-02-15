@@ -7,6 +7,8 @@
         this.selectedTheme = 0; // 0=cats, 1=aliens
         this.selectedMode = 0;  // 0=classic, 1=timeAttack, 2=survival
         this.selectedSource = 'browser'; // 'browser' or 'ip'
+        this.currentStep = 0;
+        this.stepCount = 3;
         this.particles = [];
         this.canvas = document.getElementById('particle-canvas');
         this.ctx = null;
@@ -54,6 +56,29 @@
         }
     };
 
+    StartScreen.prototype._goToStep = function (step) {
+        if (step < 0 || step >= this.stepCount) return;
+        this.currentStep = step;
+        var track = document.querySelector('.step-track');
+        if (track) {
+            track.style.transform = 'translateX(-' + (step * 100) + '%)';
+        }
+        var dots = document.querySelectorAll('.step-dot');
+        for (var i = 0; i < dots.length; i++) {
+            dots[i].classList.toggle('active', i === step);
+        }
+        document.getElementById('error-msg').textContent = '';
+        this.audio.play('uiclick');
+    };
+
+    StartScreen.prototype._nextStep = function () {
+        this._goToStep(this.currentStep + 1);
+    };
+
+    StartScreen.prototype._prevStep = function () {
+        this._goToStep(this.currentStep - 1);
+    };
+
     StartScreen.prototype._bindEvents = function () {
         var self = this;
 
@@ -95,29 +120,65 @@
             })(sourceBtns[j]);
         }
 
-        // Keyboard navigation
+        // Step navigation buttons (NEXT / BACK)
+        var stepBtns = document.querySelectorAll('.step-btn[data-dir]');
+        for (var k = 0; k < stepBtns.length; k++) {
+            (function (btn) {
+                btn.addEventListener('click', function () {
+                    if (btn.dataset.dir === 'next') {
+                        self._nextStep();
+                    } else if (btn.dataset.dir === 'back') {
+                        self._prevStep();
+                    }
+                });
+            })(stepBtns[k]);
+        }
+
+        // Keyboard navigation (step-aware)
         document.addEventListener('keydown', function (e) {
             var screen = document.getElementById('start-screen');
             if (screen.style.display === 'none' || screen.classList.contains('fade-out')) return;
 
-            // Don't intercept arrows when typing in IP input
+            // Don't intercept keys when typing in IP input
             if (document.activeElement && document.activeElement.id === 'camera-ip') return;
 
-            if (e.code === 'ArrowLeft' || e.code === 'ArrowRight') {
-                self._selectTheme(1 - self.selectedTheme);
-                self.audio.play('uiclick');
-            } else if (e.code === 'ArrowUp') {
-                self._selectMode((self.selectedMode + MODE_LIST.length - 1) % MODE_LIST.length);
-                self.audio.play('uiclick');
-            } else if (e.code === 'ArrowDown') {
-                self._selectMode((self.selectedMode + 1) % MODE_LIST.length);
-                self.audio.play('uiclick');
-            } else if (e.code === 'Tab') {
-                e.preventDefault();
-                self._selectSource(self.selectedSource === 'browser' ? 'ip' : 'browser');
-                self.audio.play('uiclick');
-            } else if (e.code === 'Enter' || e.code === 'Space') {
-                document.getElementById('start-btn').click();
+            var step = self.currentStep;
+
+            if (step === 0) {
+                // Theme step: Left/Right = toggle theme, Enter = next
+                if (e.code === 'ArrowLeft' || e.code === 'ArrowRight') {
+                    self._selectTheme(1 - self.selectedTheme);
+                    self.audio.play('uiclick');
+                } else if (e.code === 'Enter' || e.code === 'Space') {
+                    e.preventDefault();
+                    self._nextStep();
+                }
+            } else if (step === 1) {
+                // Mode step: Left/Right/Up/Down = cycle mode, Enter = next, Escape = back
+                if (e.code === 'ArrowLeft' || e.code === 'ArrowUp') {
+                    self._selectMode((self.selectedMode + MODE_LIST.length - 1) % MODE_LIST.length);
+                    self.audio.play('uiclick');
+                } else if (e.code === 'ArrowRight' || e.code === 'ArrowDown') {
+                    self._selectMode((self.selectedMode + 1) % MODE_LIST.length);
+                    self.audio.play('uiclick');
+                } else if (e.code === 'Enter' || e.code === 'Space') {
+                    e.preventDefault();
+                    self._nextStep();
+                } else if (e.code === 'Escape') {
+                    self._prevStep();
+                }
+            } else if (step === 2) {
+                // Camera step: Tab = toggle source, Enter = start, Escape = back
+                if (e.code === 'Tab') {
+                    e.preventDefault();
+                    self._selectSource(self.selectedSource === 'browser' ? 'ip' : 'browser');
+                    self.audio.play('uiclick');
+                } else if (e.code === 'Enter' || e.code === 'Space') {
+                    e.preventDefault();
+                    document.getElementById('start-btn').click();
+                } else if (e.code === 'Escape') {
+                    self._prevStep();
+                }
             }
         });
     };
@@ -229,6 +290,7 @@
         var screen = document.getElementById('start-screen');
         screen.style.display = 'flex';
         screen.classList.remove('fade-out');
+        this._goToStep(0);
         this._updateHighScoreDisplay();
         this._animateParticles();
     };

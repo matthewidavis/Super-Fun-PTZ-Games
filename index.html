@@ -12,63 +12,90 @@
         <canvas id="particle-canvas"></canvas>
         <div class="start-content">
             <h1 class="title">FUN PTZ GAMES</h1>
-            <p class="subtitle">Choose your adventure</p>
 
-            <p class="section-label">CHOOSE YOUR THEME:</p>
-            <div class="card-row">
-                <div class="theme-card selected" data-theme="cats" tabindex="0">
-                    <canvas class="card-icon" width="120" height="100"></canvas>
-                    <div class="card-title">CATS</div>
-                    <div class="card-sub">Boop cats peeking</div>
-                </div>
-                <div class="theme-card" data-theme="aliens" tabindex="0">
-                    <canvas class="card-icon" width="120" height="100"></canvas>
-                    <div class="card-title">ALIENS</div>
-                    <div class="card-sub">Tag aliens hiding</div>
-                </div>
+            <div class="step-dots">
+                <span class="step-dot active"></span>
+                <span class="step-dot"></span>
+                <span class="step-dot"></span>
             </div>
 
-            <p class="section-label">CHOOSE YOUR MODE:</p>
-            <div class="card-row mode-row">
-                <div class="mode-card selected" data-mode="classic" tabindex="0">
-                    <div class="mode-icon">&#127919;</div>
-                    <div class="card-title">CLASSIC</div>
-                    <div class="card-sub">10 shots, make them count</div>
-                </div>
-                <div class="mode-card" data-mode="timeAttack" tabindex="0">
-                    <div class="mode-icon">&#9201;</div>
-                    <div class="card-title">TIME ATTACK</div>
-                    <div class="card-sub">60s, unlimited ammo</div>
-                </div>
-                <div class="mode-card" data-mode="survival" tabindex="0">
-                    <div class="mode-icon">&#9889;</div>
-                    <div class="card-title">SURVIVAL</div>
-                    <div class="card-sub">Hit to earn ammo</div>
+            <div class="step-viewport">
+                <div class="step-track">
+                    <!-- Step 0: Pick your crew -->
+                    <div class="step">
+                        <p class="step-heading">Pick your crew</p>
+                        <div class="card-row">
+                            <div class="theme-card selected" data-theme="cats" tabindex="0">
+                                <canvas class="card-icon" width="120" height="100"></canvas>
+                                <div class="card-title">CATS</div>
+                                <div class="card-sub">Boop cats peeking</div>
+                            </div>
+                            <div class="theme-card" data-theme="aliens" tabindex="0">
+                                <canvas class="card-icon" width="120" height="100"></canvas>
+                                <div class="card-title">ALIENS</div>
+                                <div class="card-sub">Tag aliens hiding</div>
+                            </div>
+                        </div>
+                        <div class="step-nav">
+                            <span></span>
+                            <button class="step-btn" data-dir="next">NEXT &#9654;</button>
+                        </div>
+                    </div>
+
+                    <!-- Step 1: Pick your mode -->
+                    <div class="step">
+                        <p class="step-heading">Pick your mode</p>
+                        <div class="card-row mode-row">
+                            <div class="mode-card selected" data-mode="classic" tabindex="0">
+                                <div class="mode-icon">&#127919;</div>
+                                <div class="card-title">CLASSIC</div>
+                                <div class="card-sub">10 shots, make them count</div>
+                            </div>
+                            <div class="mode-card" data-mode="timeAttack" tabindex="0">
+                                <div class="mode-icon">&#9201;</div>
+                                <div class="card-title">TIME ATTACK</div>
+                                <div class="card-sub">60s, unlimited ammo</div>
+                            </div>
+                            <div class="mode-card" data-mode="survival" tabindex="0">
+                                <div class="mode-icon">&#9889;</div>
+                                <div class="card-title">SURVIVAL</div>
+                                <div class="card-sub">Hit to earn ammo</div>
+                            </div>
+                        </div>
+                        <div id="high-scores-display" class="high-scores"></div>
+                        <div class="step-nav">
+                            <button class="step-btn back-btn" data-dir="back">&#9664; BACK</button>
+                            <button class="step-btn" data-dir="next">NEXT &#9654;</button>
+                        </div>
+                    </div>
+
+                    <!-- Step 2: Ready? -->
+                    <div class="step">
+                        <p class="step-heading">Ready?</p>
+                        <div class="source-row">
+                            <label class="section-label">INPUT SOURCE:</label>
+                            <div class="source-toggle">
+                                <button class="source-btn selected" data-source="browser">Browser Camera</button>
+                                <button class="source-btn" data-source="ip">IP Camera</button>
+                            </div>
+                        </div>
+                        <div id="browser-camera-row" class="camera-row">
+                            <label class="section-label" for="camera-select">CAMERA:</label>
+                            <select id="camera-select"><option value="">Default camera</option></select>
+                        </div>
+                        <div id="ip-camera-row" class="camera-row" style="display:none;">
+                            <label class="section-label" for="camera-ip">CAMERA IP:</label>
+                            <input id="camera-ip" type="text" placeholder="192.168.1.100">
+                        </div>
+                        <p id="error-msg" class="error-msg"></p>
+                        <div class="step-nav">
+                            <button class="step-btn back-btn" data-dir="back">&#9664; BACK</button>
+                            <button id="start-btn" class="step-btn start-btn-final">START</button>
+                        </div>
+                        <p class="hints">Enter: Start &bull; Arrows: Select &bull; Esc: Back &bull; Gamepad supported</p>
+                    </div>
                 </div>
             </div>
-
-            <div class="source-row">
-                <label class="section-label">INPUT SOURCE:</label>
-                <div class="source-toggle">
-                    <button class="source-btn selected" data-source="browser">Browser Camera</button>
-                    <button class="source-btn" data-source="ip">IP Camera</button>
-                </div>
-            </div>
-
-            <div id="browser-camera-row" class="camera-row">
-                <label class="section-label" for="camera-select">CAMERA:</label>
-                <select id="camera-select"><option value="">Default camera</option></select>
-            </div>
-            <div id="ip-camera-row" class="camera-row" style="display:none;">
-                <label class="section-label" for="camera-ip">CAMERA IP:</label>
-                <input id="camera-ip" type="text" placeholder="192.168.1.100">
-            </div>
-
-            <div id="high-scores-display" class="high-scores"></div>
-
-            <button id="start-btn">START</button>
-            <p id="error-msg" class="error-msg"></p>
-            <p class="hints">Click Start to begin &bull; Left/Right: Theme &bull; Up/Down: Mode &bull; Tab: Source &bull; Gamepad supported</p>
         </div>
     </div>
 

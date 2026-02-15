@@ -94,24 +94,47 @@
             if (gamepads[i]) { gp = gamepads[i]; break; }
         }
         if (gp) {
+            var step = startScreen.currentStep;
+
+            // A button (0): advance step or start
             if (gp.buttons[0] && gp.buttons[0].pressed && !_startPadPrev[0]) {
-                document.getElementById('start-btn').click();
+                if (step < 2) {
+                    startScreen._nextStep();
+                } else {
+                    document.getElementById('start-btn').click();
+                }
             }
-            // D-pad left/right → theme
-            if (gp.buttons[14] && gp.buttons[14].pressed && !_startPadPrev[14]) {
-                startScreen._selectTheme(1 - startScreen.selectedTheme);
+            // B button (1): go back
+            if (gp.buttons[1] && gp.buttons[1].pressed && !_startPadPrev[1]) {
+                startScreen._prevStep();
             }
-            if (gp.buttons[15] && gp.buttons[15].pressed && !_startPadPrev[15]) {
-                startScreen._selectTheme(1 - startScreen.selectedTheme);
+
+            if (step === 0) {
+                // D-pad left/right → toggle theme
+                if (gp.buttons[14] && gp.buttons[14].pressed && !_startPadPrev[14]) {
+                    startScreen._selectTheme(1 - startScreen.selectedTheme);
+                    startScreen.audio.play('uiclick');
+                }
+                if (gp.buttons[15] && gp.buttons[15].pressed && !_startPadPrev[15]) {
+                    startScreen._selectTheme(1 - startScreen.selectedTheme);
+                    startScreen.audio.play('uiclick');
+                }
+            } else if (step === 1) {
+                // D-pad left/up → prev mode, right/down → next mode
+                if ((gp.buttons[14] && gp.buttons[14].pressed && !_startPadPrev[14]) ||
+                    (gp.buttons[12] && gp.buttons[12].pressed && !_startPadPrev[12])) {
+                    var modes = 3;
+                    startScreen._selectMode((startScreen.selectedMode + modes - 1) % modes);
+                    startScreen.audio.play('uiclick');
+                }
+                if ((gp.buttons[15] && gp.buttons[15].pressed && !_startPadPrev[15]) ||
+                    (gp.buttons[13] && gp.buttons[13].pressed && !_startPadPrev[13])) {
+                    startScreen._selectMode((startScreen.selectedMode + 1) % 3);
+                    startScreen.audio.play('uiclick');
+                }
             }
-            // D-pad up/down → mode
-            if (gp.buttons[12] && gp.buttons[12].pressed && !_startPadPrev[12]) {
-                var modes = 3;
-                startScreen._selectMode((startScreen.selectedMode + modes - 1) % modes);
-            }
-            if (gp.buttons[13] && gp.buttons[13].pressed && !_startPadPrev[13]) {
-                startScreen._selectMode((startScreen.selectedMode + 1) % 3);
-            }
+            // Step 2: no d-pad actions
+
             for (var bi = 0; bi < gp.buttons.length; bi++) {
                 _startPadPrev[bi] = gp.buttons[bi].pressed;
             }

@@ -421,6 +421,7 @@
         var spawned = gameState.target.checkPendingSpawn(config);
         if (spawned) {
             audio.play('appear');
+            motionHistoryX = [];  // Fresh tracking for new target
         }
 
         // 6. Despawn check
@@ -471,7 +472,25 @@
             var maxCount = config.POI_PERSISTENCE_MIN + config.TARGET_HOLD_FRAMES;
 
             if (prevGray) {
-                var rawDx = ARGame.estimateMotion(prevGray, gray, procW, procH);
+                // Local motion estimation centered on the tracked position
+                var trackX = null, trackY = null;
+                if (gameState.target.active) {
+                    trackX = gameState.target.spawnX;
+                    trackY = gameState.target.spawnY;
+                } else if (gameState.target.scanTarget) {
+                    trackX = gameState.target.scanTarget[0];
+                    trackY = gameState.target.scanTarget[1];
+                } else if (gameState.target.pendingSpawn) {
+                    trackX = gameState.target.pendingSpawn[0];
+                    trackY = gameState.target.pendingSpawn[1];
+                }
+
+                var rawDx = 0;
+                if (trackX !== null) {
+                    var tpx = Math.round(trackX * processScale);
+                    var tpy = Math.round(trackY * processScale);
+                    rawDx = ARGame.estimateLocalMotionX(prevGray, gray, procW, procH, tpx, tpy);
+                }
 
                 // Median filter: reject single-frame noise outliers
                 motionHistoryX.push(rawDx);

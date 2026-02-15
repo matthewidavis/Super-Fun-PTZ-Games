@@ -193,32 +193,35 @@
         return { found: true, x: gameX, y: refinedY };
     };
 
-    // Horizontal motion estimation between two grayscale frames.
-    // Cross-correlates a horizontal strip from the middle of the frame
-    // over a search range to find the pixel shift.
-    // Returns dx in processing-resolution pixels (negative = scene moved left).
-    ARGame.estimateMotion = function (prevGray, curGray, w, h) {
+    // Local horizontal motion estimation centered on a target position.
+    // Cross-correlates a patch around (px, py) in processing-resolution
+    // grayscale between two frames. Uses texture above+below the edge
+    // for reliable matching even on uniform horizontal edges.
+    // Returns dx in processing-resolution pixels.
+    ARGame.estimateLocalMotionX = function (prevGray, curGray, w, h, px, py) {
         if (!prevGray || prevGray.length !== curGray.length) return 0;
 
-        var maxShift = 16;          // Search ±16 pixels at processing res
-        var stripY = (h >> 1) - 2;  // Middle of frame
-        var stripH = 4;             // 4-row strip for noise averaging
-        var margin = maxShift + 4;
+        var maxShift = 12;
+        var halfH = 8;              // ±8 rows: captures texture above+below edge
+        var halfW = 30;             // ±30 columns around target
 
-        if (stripY < 0 || stripY + stripH >= h || w < margin * 2) return 0;
+        var yStart = Math.max(0, py - halfH);
+        var yEnd = Math.min(h, py + halfH + 1);
+        var xStart = Math.max(maxShift, px - halfW);
+        var xEnd = Math.min(w - maxShift, px + halfW + 1);
+
+        if (yEnd - yStart < 3 || xEnd - xStart < 10) return 0;
 
         var bestShift = 0;
-        var bestSAD = Infinity;     // Sum of Absolute Differences
+        var bestSAD = Infinity;
 
         for (var shift = -maxShift; shift <= maxShift; shift++) {
             var sad = 0;
             var count = 0;
-            for (var row = 0; row < stripH; row++) {
-                var y = stripY + row;
+            for (var y = yStart; y < yEnd; y++) {
                 var base = y * w;
-                // Compare prevGray[x] with curGray[x + shift]
-                var x0 = Math.max(margin, -shift);
-                var x1 = Math.min(w - margin, w - shift);
+                var x0 = Math.max(xStart, -shift);
+                var x1 = Math.min(xEnd, w - shift);
                 for (var x = x0; x < x1; x++) {
                     var diff = prevGray[base + x] - curGray[base + x + shift];
                     sad += diff < 0 ? -diff : diff;
@@ -232,9 +235,7 @@
             }
         }
 
-        // Reject if the match quality is poor (all shifts look similar)
         if (bestSAD > 30) return 0;
-
         return bestShift;
     };
     // Vertical motion estimation between two grayscale frames.

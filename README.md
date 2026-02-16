@@ -46,13 +46,9 @@ No install. No build step. Just open the link, allow camera access, and start pl
 
 ## Demo
 
-<!--
 <p align="center">
   <img src="assets/demo.gif" alt="Gameplay demo" width="800" />
 </p>
--->
-
-*Coming soon — add a GIF to `assets/demo.gif` to show it off here.*
 
 ---
 

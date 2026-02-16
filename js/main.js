@@ -249,6 +249,12 @@
         sourceWidth = vw;
         sourceHeight = vh;
 
+        // Always hide the PTZ banner when (re)entering the game —
+        // it's only relevant to browser-camera mode
+        document.getElementById('ptz-banner').style.display = 'none';
+        console.log('PTZ controller:', ptz && ptz.constructor && ptz.constructor.name,
+                     'hasPTZ:', ptz && ptz.hasPTZ);
+
         // Setup config
         config = {};
         for (var k in ARGame.GameConfig) {

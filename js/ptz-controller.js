@@ -47,6 +47,12 @@
 
             if (!this.hasPTZ) {
                 console.warn('PTZ not found in settings. Keys:', Object.keys(settings).join(', '));
+                console.warn('Capabilities keys:', Object.keys(caps).join(', '));
+                console.warn('Page secure context:', window.isSecureContext,
+                             '| URL:', location.protocol + '//' + location.host);
+            } else {
+                console.log('PTZ detected — pan:', this.panMin, '-', this.panMax,
+                            'tilt:', this.tiltMin, '-', this.tiltMax);
             }
         } catch (e) {
             console.error('PTZ init error:', e);

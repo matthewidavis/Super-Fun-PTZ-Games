@@ -115,21 +115,42 @@
             s.src = 'https://docs.opencv.org/4.9.0/opencv.js';
             s.async = true;
             s.onload = function () {
+                console.log('OpenCV.js script loaded, waiting for WASM...');
                 try {
-                    if (typeof cv !== 'undefined' && cv.onRuntimeInitialized !== undefined) {
+                    // Some builds expose cv as a Promise
+                    if (typeof cv !== 'undefined' && typeof cv.then === 'function') {
+                        cv.then(function () {
+                            opencvReady = true;
+                            console.log('OpenCV.js ready (promise)');
+                        });
+                        return;
+                    }
+                    // Classic Emscripten callback
+                    if (typeof cv !== 'undefined') {
                         cv['onRuntimeInitialized'] = function () {
                             opencvReady = true;
-                            console.log('OpenCV.js ready');
+                            console.log('OpenCV.js ready (callback)');
                         };
                     }
-                } catch (e) {
-                    console.warn('OpenCV.js init failed:', e);
-                }
+                } catch (e) {}
+                // Poll as last resort
+                var attempts = 0;
+                (function poll() {
+                    if (opencvReady) return;
+                    attempts++;
+                    try {
+                        if (typeof cv !== 'undefined' && typeof cv.Mat !== 'undefined') {
+                            opencvReady = true;
+                            console.log('OpenCV.js ready (poll, ' + attempts + ')');
+                            return;
+                        }
+                    } catch (e) {}
+                    if (attempts < 150) setTimeout(poll, 200);
+                })();
             };
-            s.onerror = function () { console.warn('OpenCV.js failed to load'); };
+            s.onerror = function () { console.warn('OpenCV.js failed to load from CDN'); };
             document.head.appendChild(s);
         }
-        // Defer OpenCV load so it can't interfere with game scripts
         window.addEventListener('load', loadOpenCV);
     </script>
 

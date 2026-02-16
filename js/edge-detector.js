@@ -193,10 +193,74 @@
         return { found: true, x: gameX, y: refinedY };
     };
 
-    // Phase-correlation motion estimation using OpenCV.js — same algorithm
-    // as cv2.phaseCorrelate in the Python version. FFT-based, full-frame,
-    // subpixel precision. Returns [dx, dy] in processing-resolution pixels.
-    // Falls back to [0,0] if OpenCV.js hasn't loaded yet.
+    // Horizontal motion estimation via column-average cross-correlation.
+    // Averages each column across all rows to build a 1D brightness profile,
+    // then cross-correlates prev vs cur profiles over ±maxShift.
+    // Parabolic interpolation at the SAD minimum gives SUBPIXEL precision —
+    // the critical piece that all previous integer-SAD approaches lacked.
+    // Returns dx in processing-resolution pixels (float).
+    ARGame.estimateMotionX = function (prevGray, curGray, w, h) {
+        if (!prevGray || prevGray.length !== curGray.length) return 0;
+
+        var maxShift = 16;
+        var yStart = (h * 0.15) | 0;
+        var yEnd = (h * 0.85) | 0;
+        if (yEnd - yStart < 10 || w < maxShift * 4) return 0;
+
+        // Column-sum profiles (full vertical integration = max SNR)
+        var prevP = new Float64Array(w);
+        var curP = new Float64Array(w);
+        for (var y = yStart; y < yEnd; y++) {
+            var base = y * w;
+            for (var x = 0; x < w; x++) {
+                prevP[x] += prevGray[base + x];
+                curP[x] += curGray[base + x];
+            }
+        }
+
+        // Cross-correlate with margin to avoid boundary wrap
+        var margin = maxShift + 2;
+        var xS = margin;
+        var xE = w - margin;
+        if (xE - xS < 20) return 0;
+
+        var n = 2 * maxShift + 1;
+        var sadArr = new Float64Array(n);
+        var bestIdx = maxShift; // default to shift=0
+        var bestSAD = Infinity;
+
+        for (var s = -maxShift; s <= maxShift; s++) {
+            var sad = 0;
+            for (var x = xS; x < xE; x++) {
+                var diff = prevP[x] - curP[x + s];
+                if (diff < 0) diff = -diff;
+                sad += diff;
+            }
+            var idx = s + maxShift;
+            sadArr[idx] = sad;
+            if (sad < bestSAD) {
+                bestSAD = sad;
+                bestIdx = idx;
+            }
+        }
+
+        // Subpixel refinement via parabolic interpolation
+        var intShift = bestIdx - maxShift;
+        if (bestIdx > 0 && bestIdx < n - 1) {
+            var s0 = sadArr[bestIdx - 1];
+            var s1 = sadArr[bestIdx];
+            var s2 = sadArr[bestIdx + 1];
+            var denom = s0 - 2 * s1 + s2;
+            if (denom > 0.001) {
+                return intShift + 0.5 * (s0 - s2) / denom;
+            }
+        }
+
+        return intShift;
+    };
+
+    // OpenCV.js phaseCorrelate wrapper — used when OpenCV finishes loading.
+    // FFT-based, full-frame, subpixel. Returns dx in proc-res pixels (float).
     var _hanningCache = null;
     var _hanningW = 0;
     var _hanningH = 0;
@@ -205,7 +269,6 @@
         if (!prevGray || prevGray.length !== curGray.length) return [0, 0];
         if (typeof cv === 'undefined' || !window.opencvReady) return [0, 0];
 
-        // Cache Hanning window (same dimensions every frame)
         if (!_hanningCache || _hanningW !== w || _hanningH !== h) {
             if (_hanningCache) _hanningCache.delete();
             _hanningCache = new cv.Mat();
@@ -218,12 +281,10 @@
         try {
             prevMat = cv.matFromArray(h, w, cv.CV_8UC1, Array.from(prevGray));
             curMat = cv.matFromArray(h, w, cv.CV_8UC1, Array.from(curGray));
-
             prevFloat = new cv.Mat();
             curFloat = new cv.Mat();
             prevMat.convertTo(prevFloat, cv.CV_64F);
             curMat.convertTo(curFloat, cv.CV_64F);
-
             var result = cv.phaseCorrelate(prevFloat, curFloat, _hanningCache);
             return [result.x, result.y];
         } catch (e) {
@@ -234,91 +295,5 @@
             if (prevFloat) prevFloat.delete();
             if (curFloat) curFloat.delete();
         }
-    };
-
-    // Local horizontal motion estimation centered on a target position.
-    // Cross-correlates a patch around (px, py) in processing-resolution
-    // grayscale between two frames. Uses texture above+below the edge
-    // for reliable matching even on uniform horizontal edges.
-    // Returns dx in processing-resolution pixels.
-    ARGame.estimateLocalMotionX = function (prevGray, curGray, w, h, px, py) {
-        if (!prevGray || prevGray.length !== curGray.length) return 0;
-
-        var maxShift = 12;
-        var halfH = 8;              // ±8 rows: captures texture above+below edge
-        var halfW = 30;             // ±30 columns around target
-
-        var yStart = Math.max(0, py - halfH);
-        var yEnd = Math.min(h, py + halfH + 1);
-        var xStart = Math.max(maxShift, px - halfW);
-        var xEnd = Math.min(w - maxShift, px + halfW + 1);
-
-        if (yEnd - yStart < 3 || xEnd - xStart < 10) return 0;
-
-        var bestShift = 0;
-        var bestSAD = Infinity;
-
-        for (var shift = -maxShift; shift <= maxShift; shift++) {
-            var sad = 0;
-            var count = 0;
-            for (var y = yStart; y < yEnd; y++) {
-                var base = y * w;
-                var x0 = Math.max(xStart, -shift);
-                var x1 = Math.min(xEnd, w - shift);
-                for (var x = x0; x < x1; x++) {
-                    var diff = prevGray[base + x] - curGray[base + x + shift];
-                    sad += diff < 0 ? -diff : diff;
-                    count++;
-                }
-            }
-            if (count > 0) sad /= count;
-            if (sad < bestSAD) {
-                bestSAD = sad;
-                bestShift = shift;
-            }
-        }
-
-        if (bestSAD > 30) return 0;
-        return bestShift;
-    };
-    // Vertical motion estimation between two grayscale frames.
-    // Cross-correlates a vertical strip from the middle of the frame
-    // over a search range to find the pixel shift.
-    // Returns dy in processing-resolution pixels (negative = scene moved up).
-    ARGame.estimateMotionY = function (prevGray, curGray, w, h) {
-        if (!prevGray || prevGray.length !== curGray.length) return 0;
-
-        var maxShift = 16;          // Search ±16 pixels at processing res
-        var stripX = (w >> 1) - 2;  // Middle of frame
-        var stripW = 4;             // 4-column strip for noise averaging
-        var margin = maxShift + 4;
-
-        if (stripX < 0 || stripX + stripW >= w || h < margin * 2) return 0;
-
-        var bestShift = 0;
-        var bestSAD = Infinity;
-
-        for (var shift = -maxShift; shift <= maxShift; shift++) {
-            var sad = 0;
-            var count = 0;
-            var y0 = Math.max(margin, -shift);
-            var y1 = Math.min(h - margin, h - shift);
-            for (var y = y0; y < y1; y++) {
-                for (var col = 0; col < stripW; col++) {
-                    var x = stripX + col;
-                    var diff = prevGray[y * w + x] - curGray[(y + shift) * w + x];
-                    sad += diff < 0 ? -diff : diff;
-                    count++;
-                }
-            }
-            if (count > 0) sad /= count;
-            if (sad < bestSAD) {
-                bestSAD = sad;
-                bestShift = shift;
-            }
-        }
-
-        if (bestSAD > 30) return 0;
-        return bestShift;
     };
 })();

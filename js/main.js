@@ -460,30 +460,36 @@
             var scale = 1.0 / processScale;
             var maxCount = config.POI_PERSISTENCE_MIN + config.TARGET_HOLD_FRAMES;
 
-            // Phase correlation: detect camera motion between frames
-            // (same approach as cv2.phaseCorrelate in the Python version)
-            if (prevGray && ARGame.estimateMotionXY) {
-                try {
-                    var motion = ARGame.estimateMotionXY(prevGray, gray, procW, procH);
-                    var dx = motion[0];
-                    var nativeDx = dx * scale;
-
-                    if (Math.abs(nativeDx) > 0.5) {
-                        nativeDx = Math.round(nativeDx);
-                        if (gameState.target.active) {
-                            gameState.target.spawnX += nativeDx;
-                        }
-                        if (gameState.target.scanTarget) {
-                            gameState.target.scanTarget[0] += nativeDx;
-                        }
-                        if (gameState.target.pendingSpawn) {
-                            gameState.target.pendingSpawn[0] += nativeDx;
-                        }
-                        gameState.target.hitHistory = gameState.target.hitHistory
-                            .map(function (h) { return [h[0] + nativeDx, h[1]]; })
-                            .filter(function (h) { return h[0] >= 0 && h[0] <= config.GAME_WIDTH; });
+            // Horizontal pan compensation: column-average (immediate),
+            // upgrades to OpenCV phaseCorrelate when loaded
+            if (prevGray) {
+                var dx = 0;
+                if (window.opencvReady && ARGame.estimateMotionXY) {
+                    try {
+                        dx = ARGame.estimateMotionXY(prevGray, gray, procW, procH)[0];
+                    } catch (e) {
+                        dx = ARGame.estimateMotionX(prevGray, gray, procW, procH);
                     }
-                } catch (e) {}
+                } else {
+                    dx = ARGame.estimateMotionX(prevGray, gray, procW, procH);
+                }
+                var nativeDx = dx * scale;
+
+                if (Math.abs(nativeDx) > 0.5) {
+                    nativeDx = Math.round(nativeDx);
+                    if (gameState.target.active) {
+                        gameState.target.spawnX += nativeDx;
+                    }
+                    if (gameState.target.scanTarget) {
+                        gameState.target.scanTarget[0] += nativeDx;
+                    }
+                    if (gameState.target.pendingSpawn) {
+                        gameState.target.pendingSpawn[0] += nativeDx;
+                    }
+                    gameState.target.hitHistory = gameState.target.hitHistory
+                        .map(function (h) { return [h[0] + nativeDx, h[1]]; })
+                        .filter(function (h) { return h[0] >= 0 && h[0] <= config.GAME_WIDTH; });
+                }
             }
             prevGray = gray;
 

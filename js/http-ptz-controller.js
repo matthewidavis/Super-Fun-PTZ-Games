@@ -12,9 +12,9 @@
         '1,1': 'rightdown'
     };
 
-    var MAX_SPEED = 3;       // PTZOptics speed 1-24; keep very low to match UVC feel
-    var RAMP_MS = 400;       // Time to reach full target speed from standstill
-    var RAMP_INTERVAL = 80;  // How often to re-evaluate speed during ramp (ms)
+    var MAX_SPEED = 20;      // PTZOptics speed 1-24; matches Python gamepad max zone
+    var RAMP_MS = 200;       // Time to reach full target speed from standstill
+    var RAMP_INTERVAL = 60;  // How often to re-evaluate speed during ramp (ms)
 
     function HTTPPTZController(ip) {
         this.ip = ip;

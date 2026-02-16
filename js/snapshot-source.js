@@ -12,7 +12,6 @@
         this._fetching = false;
         this._backoff = 100;
         this._latestImg = null;   // Latest decoded image (back buffer)
-        this._frameReady = false; // New frame available since last updateCanvas
     }
 
     SnapshotSource.prototype.start = function () {
@@ -30,7 +29,6 @@
     SnapshotSource.prototype.updateCanvas = function () {
         if (this._latestImg && this._ctx) {
             this._ctx.drawImage(this._latestImg, 0, 0);
-            this._frameReady = false;
         }
     };
 
@@ -53,7 +51,6 @@
             }
             // Store to back buffer — game loop will blit via updateCanvas()
             self._latestImg = img;
-            self._frameReady = true;
             self._backoff = 100;
             self._fetching = false;
             if (self._running) {

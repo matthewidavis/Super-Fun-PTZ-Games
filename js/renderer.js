@@ -5,7 +5,6 @@
         this.theme = theme;
         this.radarAngle = 0;
         this.resultsStartTime = 0;
-        this.resultsShownMarkers = 0;
     }
 
     // -- Main draw entry point --
@@ -28,7 +27,6 @@
         if (gs.gameOver && gs.showResults) {
             if (!this.resultsStartTime) {
                 this.resultsStartTime = performance.now();
-                this.resultsShownMarkers = 0;
             }
             this.drawResults(ctx, gs);
             if (shaking) ctx.restore();
@@ -680,7 +678,6 @@
 
         // Staggered shot markers
         var markerCount = Math.min(gs.shots.length, Math.floor(fadeElapsed / 100));
-        this.resultsShownMarkers = markerCount;
         var scaleX = (radius * 2) / cfg.TARGET_WIDTH;
         var scaleY = (radius * 2) / cfg.TARGET_HEIGHT;
         var ox = cx - radius;

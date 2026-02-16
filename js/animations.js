@@ -3,14 +3,8 @@
 
     // Shared easing functions
     ARGame.Easing = {
-        easeOutBack: function (t) {
-            return 1 + 2.7 * Math.pow(t - 1, 3) + 1.7 * Math.pow(t - 1, 2);
-        },
         easeOutQuad: function (t) {
             return 1 - (1 - t) * (1 - t);
-        },
-        easeOutCubic: function (t) {
-            return 1 - Math.pow(1 - t, 3);
         }
     };
 

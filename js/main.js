@@ -462,26 +462,28 @@
 
             // Phase correlation: detect camera motion between frames
             // (same approach as cv2.phaseCorrelate in the Python version)
-            if (prevGray) {
-                var motion = ARGame.estimateMotionXY(prevGray, gray, procW, procH);
-                var dx = motion[0];
-                var nativeDx = dx * scale;
+            if (prevGray && ARGame.estimateMotionXY) {
+                try {
+                    var motion = ARGame.estimateMotionXY(prevGray, gray, procW, procH);
+                    var dx = motion[0];
+                    var nativeDx = dx * scale;
 
-                if (Math.abs(nativeDx) > 0.5) {
-                    nativeDx = Math.round(nativeDx);
-                    if (gameState.target.active) {
-                        gameState.target.spawnX += nativeDx;
+                    if (Math.abs(nativeDx) > 0.5) {
+                        nativeDx = Math.round(nativeDx);
+                        if (gameState.target.active) {
+                            gameState.target.spawnX += nativeDx;
+                        }
+                        if (gameState.target.scanTarget) {
+                            gameState.target.scanTarget[0] += nativeDx;
+                        }
+                        if (gameState.target.pendingSpawn) {
+                            gameState.target.pendingSpawn[0] += nativeDx;
+                        }
+                        gameState.target.hitHistory = gameState.target.hitHistory
+                            .map(function (h) { return [h[0] + nativeDx, h[1]]; })
+                            .filter(function (h) { return h[0] >= 0 && h[0] <= config.GAME_WIDTH; });
                     }
-                    if (gameState.target.scanTarget) {
-                        gameState.target.scanTarget[0] += nativeDx;
-                    }
-                    if (gameState.target.pendingSpawn) {
-                        gameState.target.pendingSpawn[0] += nativeDx;
-                    }
-                    gameState.target.hitHistory = gameState.target.hitHistory
-                        .map(function (h) { return [h[0] + nativeDx, h[1]]; })
-                        .filter(function (h) { return h[0] >= 0 && h[0] <= config.GAME_WIDTH; });
-                }
+                } catch (e) {}
             }
             prevGray = gray;
 

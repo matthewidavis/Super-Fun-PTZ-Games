@@ -108,10 +108,30 @@
     </div>
 
     <!-- OpenCV.js — loads async in background for phaseCorrelate pan tracking -->
-    <script>var opencvReady = false;</script>
-    <script async src="https://docs.opencv.org/4.9.0/opencv.js"
-            onload="cv.onRuntimeInitialized = function(){ opencvReady = true; console.log('OpenCV.js ready'); };"
-            type="text/javascript"></script>
+    <script>
+        var opencvReady = false;
+        function loadOpenCV() {
+            var s = document.createElement('script');
+            s.src = 'https://docs.opencv.org/4.9.0/opencv.js';
+            s.async = true;
+            s.onload = function () {
+                try {
+                    if (typeof cv !== 'undefined' && cv.onRuntimeInitialized !== undefined) {
+                        cv['onRuntimeInitialized'] = function () {
+                            opencvReady = true;
+                            console.log('OpenCV.js ready');
+                        };
+                    }
+                } catch (e) {
+                    console.warn('OpenCV.js init failed:', e);
+                }
+            };
+            s.onerror = function () { console.warn('OpenCV.js failed to load'); };
+            document.head.appendChild(s);
+        }
+        // Defer OpenCV load so it can't interfere with game scripts
+        window.addEventListener('load', loadOpenCV);
+    </script>
 
     <!-- Scripts: order matters (no ES modules) -->
     <script src="js/namespace.js"></script>

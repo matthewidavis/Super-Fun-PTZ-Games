@@ -193,70 +193,47 @@
         return { found: true, x: gameX, y: refinedY };
     };
 
-    // Horizontal motion estimation via column-average profiling.
-    // Mimics cv2.phaseCorrelate's full-frame approach: averages each column
-    // across ALL rows to produce a 1D brightness profile. Cross-correlates
-    // the profiles between frames to find horizontal shift.
-    //
-    // Why this works when per-pixel SAD fails:
-    // - Integrates the ENTIRE frame (like phaseCorrelate), not a strip or block
-    // - Noise reduced by sqrt(h) (~15x at 240px) through column averaging
-    // - Horizontal edges contribute a constant to every column → cancels in SAD
-    // - Any vertical feature (objects, shadows, corners) creates clear profile peaks
-    ARGame.estimateGlobalMotionX = function (prevGray, curGray, w, h) {
-        if (!prevGray || prevGray.length !== curGray.length) return 0;
+    // Phase-correlation motion estimation using OpenCV.js — same algorithm
+    // as cv2.phaseCorrelate in the Python version. FFT-based, full-frame,
+    // subpixel precision. Returns [dx, dy] in processing-resolution pixels.
+    // Falls back to [0,0] if OpenCV.js hasn't loaded yet.
+    var _hanningCache = null;
+    var _hanningW = 0;
+    var _hanningH = 0;
 
-        var maxShift = 12;
-        var margin = maxShift + 2;
+    ARGame.estimateMotionXY = function (prevGray, curGray, w, h) {
+        if (!prevGray || prevGray.length !== curGray.length) return [0, 0];
+        if (typeof cv === 'undefined' || !window.opencvReady) return [0, 0];
 
-        if (w < margin * 2 + 10 || h < 10) return 0;
-
-        // Step 1: Column averages — project full 2D frame onto 1D X axis
-        var prevProfile = new Float32Array(w);
-        var curProfile = new Float32Array(w);
-
-        for (var y = 0; y < h; y++) {
-            var base = y * w;
-            for (var x = 0; x < w; x++) {
-                prevProfile[x] += prevGray[base + x];
-                curProfile[x] += curGray[base + x];
-            }
+        // Cache Hanning window (same dimensions every frame)
+        if (!_hanningCache || _hanningW !== w || _hanningH !== h) {
+            if (_hanningCache) _hanningCache.delete();
+            _hanningCache = new cv.Mat();
+            cv.createHanningWindow(_hanningCache, new cv.Size(w, h), cv.CV_64F);
+            _hanningW = w;
+            _hanningH = h;
         }
 
-        var invH = 1.0 / h;
-        for (var x = 0; x < w; x++) {
-            prevProfile[x] *= invH;
-            curProfile[x] *= invH;
+        var prevMat = null, curMat = null, prevFloat = null, curFloat = null;
+        try {
+            prevMat = cv.matFromArray(h, w, cv.CV_8UC1, Array.from(prevGray));
+            curMat = cv.matFromArray(h, w, cv.CV_8UC1, Array.from(curGray));
+
+            prevFloat = new cv.Mat();
+            curFloat = new cv.Mat();
+            prevMat.convertTo(prevFloat, cv.CV_64F);
+            curMat.convertTo(curFloat, cv.CV_64F);
+
+            var result = cv.phaseCorrelate(prevFloat, curFloat, _hanningCache);
+            return [result.x, result.y];
+        } catch (e) {
+            return [0, 0];
+        } finally {
+            if (prevMat) prevMat.delete();
+            if (curMat) curMat.delete();
+            if (prevFloat) prevFloat.delete();
+            if (curFloat) curFloat.delete();
         }
-
-        // Step 2: Cross-correlate 1D profiles to find horizontal shift
-        var bestShift = 0;
-        var bestSAD = Infinity;
-        var sadAtZero = 0;
-
-        for (var shift = -maxShift; shift <= maxShift; shift++) {
-            var sad = 0;
-            var x0 = Math.max(margin, -shift);
-            var x1 = Math.min(w - margin, w - shift);
-            for (var x = x0; x < x1; x++) {
-                var diff = prevProfile[x] - curProfile[x + shift];
-                sad += diff < 0 ? -diff : diff;
-            }
-            if (shift === 0) sadAtZero = sad;
-            if (sad < bestSAD) {
-                bestSAD = sad;
-                bestShift = shift;
-            }
-        }
-
-        // Static scene: column averages barely change between frames
-        var count = w - 2 * margin;
-        if (count > 0 && sadAtZero / count < 0.5) return 0;
-
-        // No clear winner
-        if (sadAtZero > 0 && bestSAD > sadAtZero * 0.95) return 0;
-
-        return bestShift;
     };
 
     // Local horizontal motion estimation centered on a target position.

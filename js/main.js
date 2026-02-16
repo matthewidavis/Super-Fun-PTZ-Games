@@ -299,7 +299,6 @@
         processScale = config.PROCESS_SCALE;
         targetWasActive = false;
         prevGray = null;
-        motionHistoryX = [];
         lastFrameTime = 0;
         gameOverHandled = false;
 
@@ -333,15 +332,6 @@
     var prevGray = null;
     var prevAmmo = -1;
     var gameOverHandled = false;
-    var motionHistoryX = [];
-    var MOTION_HISTORY_SIZE = 3;
-
-    function medianOf(arr) {
-        if (arr.length === 0) return 0;
-        var s = arr.slice().sort(function (a, b) { return a - b; });
-        var m = s.length >> 1;
-        return s.length & 1 ? s[m] : (s[m - 1] + s[m]) * 0.5;
-    }
 
     function gameLoop(timestamp) {
         requestAnimationFrame(gameLoop);
@@ -421,7 +411,6 @@
         var spawned = gameState.target.checkPendingSpawn(config);
         if (spawned) {
             audio.play('appear');
-            motionHistoryX = [];
         }
 
         // 6. Despawn check
@@ -471,20 +460,15 @@
             var scale = 1.0 / processScale;
             var maxCount = config.POI_PERSISTENCE_MIN + config.TARGET_HOLD_FRAMES;
 
-            // Column-average motion estimation (JS equivalent of cv2.phaseCorrelate)
+            // Phase correlation: detect camera motion between frames
+            // (same approach as cv2.phaseCorrelate in the Python version)
             if (prevGray) {
-                var rawDx = ARGame.estimateGlobalMotionX(prevGray, gray, procW, procH);
+                var motion = ARGame.estimateMotionXY(prevGray, gray, procW, procH);
+                var dx = motion[0];
+                var nativeDx = dx * scale;
 
-                motionHistoryX.push(rawDx);
-                if (motionHistoryX.length > MOTION_HISTORY_SIZE) motionHistoryX.shift();
-                var dxProc = medianOf(motionHistoryX);
-
-                if (Math.abs(dxProc) < 0.8) dxProc = 0;
-                if (dxProc > 10) dxProc = 10;
-                else if (dxProc < -10) dxProc = -10;
-
-                if (dxProc !== 0) {
-                    var nativeDx = Math.round(dxProc * scale);
+                if (Math.abs(nativeDx) > 0.5) {
+                    nativeDx = Math.round(nativeDx);
                     if (gameState.target.active) {
                         gameState.target.spawnX += nativeDx;
                     }

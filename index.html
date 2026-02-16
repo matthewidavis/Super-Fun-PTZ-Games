@@ -107,6 +107,12 @@
         <div id="ptz-banner" style="display:none;">No PTZ support detected &mdash; game works with manual aiming</div>
     </div>
 
+    <!-- OpenCV.js — loads async in background for phaseCorrelate pan tracking -->
+    <script>var opencvReady = false;</script>
+    <script async src="https://docs.opencv.org/4.9.0/opencv.js"
+            onload="cv.onRuntimeInitialized = function(){ opencvReady = true; console.log('OpenCV.js ready'); };"
+            type="text/javascript"></script>
+
     <!-- Scripts: order matters (no ES modules) -->
     <script src="js/namespace.js"></script>
     <script src="js/config.js"></script>

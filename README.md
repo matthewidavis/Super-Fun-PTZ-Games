@@ -3,7 +3,7 @@
 # Super Fun PTZ Games
 
 **Your camera sees edges. We hide characters on them. You find and boop them.**
-An AR camera game for people who spent too much money on PTZ cameras.
+An AR camera game for people who spent money on PTZ cameras.
 
 <a href="https://matthewidavis.github.io/Super-Fun-PTZ-Games/"><b>&#9654; Play in your browser</b></a>
 &nbsp;&nbsp;&bull;&nbsp;&nbsp;
